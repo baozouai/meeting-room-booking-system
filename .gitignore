@@ -37,3 +37,4 @@ lerna-debug.log*
 
 #backend
 backend/.env.local
+backend/dist
