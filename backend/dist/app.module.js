@@ -8,14 +8,45 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
+const typeorm_1 = require("@nestjs/typeorm");
+const user_module_1 = require("./user/user.module");
+const user_entity_1 = require("./user/entities/user.entity");
+const role_entity_1 = require("./user/entities/role.entity");
+const permission_entity_1 = require("./user/entities/permission.entity");
+const redis_module_1 = require("./redis/redis.module");
+const email_module_1 = require("./email/email.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [],
+        imports: [
+            typeorm_1.TypeOrmModule.forRoot({
+                type: 'mysql',
+                host: 'localhost',
+                port: 3307,
+                username: 'root',
+                password: 'root',
+                database: 'meeting_room_booking_system',
+                synchronize: true,
+                logging: true,
+                entities: [user_entity_1.User, role_entity_1.Role, permission_entity_1.Permission],
+                connectorPackage: 'mysql2',
+                extra: {
+                    authPlugin: 'sha256_password',
+                },
+            }),
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+                envFilePath: ['.env.local'],
+            }),
+            user_module_1.UserModule,
+            redis_module_1.RedisModule,
+            email_module_1.EmailModule,
+        ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })
