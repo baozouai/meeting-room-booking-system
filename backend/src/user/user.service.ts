@@ -7,13 +7,17 @@ import {
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { User, md5 } from './entities/user.entity';
+import { FindOneOptions, FindOptionsRelations, Repository } from 'typeorm';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { EmailService } from 'src/email/email.service';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
+import { LoginUserDto } from './dto/login-user.dto';
+import { LoginUserVO } from './vo/login-user.vo';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
@@ -30,6 +34,12 @@ export class UserService {
   private readonly redisService: RedisService;
   @Inject(EmailService)
   private readonly emailService: EmailService;
+
+  @Inject(JwtService)
+  private readonly jwtService: JwtService;
+
+  @Inject(ConfigService)
+  private readonly configService: ConfigService;
 
   create(createUserDto: CreateUserDto) {
     return 'This action adds a new user';
@@ -51,8 +61,16 @@ export class UserService {
     return `This action removes a #${id} user`;
   }
 
-  findOneUserBy(user: Partial<Omit<User, 'encryPassword'>>) {
-    return this.userRepository.findOneBy(user);
+  findOneUserBy(
+    user: Partial<Omit<User, 'encryPassword'>>,
+    relations?: FindOneOptions<User>['relations'],
+  ) {
+    return this.userRepository.findOne({
+      where: {
+        ...user,
+      },
+      relations,
+    });
   }
 
   async register(registerUser: RegisterUserDto) {
@@ -137,8 +155,73 @@ export class UserService {
       roles: [role2],
     });
 
-    await this.permissionRepository.insert([permission1, permission2]);
-    await this.roleRepository.insert([role1, role2]);
-    await this.userRepository.insert([user1, user2]);
+    await this.permissionRepository.save([permission1, permission2]);
+    await this.roleRepository.save([role1, role2]);
+    await this.userRepository.save([user1, user2]);
+  }
+
+  async login(loginUserDto: LoginUserDto) {
+    const user = await this.findOneUserBy(
+      {
+        username: loginUserDto.username,
+      },
+      ['roles', 'roles.permissions'],
+    );
+    this.logger.log(user, UserService);
+    if (!user || user.password !== md5(loginUserDto.password)) {
+      throw new BadRequestException('用户名或密码错误');
+    }
+    delete user.password;
+    const loginUserVo = new LoginUserVO();
+
+    loginUserVo.user_info = {
+      ...user,
+      create_time: user.create_time.getTime(),
+      update_time: user.update_time.getTime(),
+      permissions: this.generatePermissions(user.roles),
+    };
+    return loginUserVo;
+  }
+
+  async generateToken(
+    userInfo: Pick<
+      LoginUserVO['user_info'],
+      'username' | 'id' | 'roles' | 'permissions'
+    >,
+  ) {
+    const { username, id, roles, permissions } = userInfo;
+    const access_token = this.jwtService.sign(
+      {
+        username,
+        userId: id,
+        roles,
+        permissions,
+      },
+      {
+        expiresIn:
+          this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
+      },
+    );
+    const refresh_token = await this.jwtService.sign(
+      {
+        username,
+        userId: id,
+      },
+      {
+        expiresIn:
+          this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
+      },
+    );
+    return [access_token, refresh_token];
+  }
+
+  generatePermissions(roles: Role[]) {
+    const permissionMap = roles.reduce((pre, cur) => {
+      cur.permissions.forEach((permission) => {
+        pre.set(permission.code, permission);
+      });
+      return pre;
+    }, new Map<string, Permission>());
+    return [...permissionMap.values()];
   }
 }
