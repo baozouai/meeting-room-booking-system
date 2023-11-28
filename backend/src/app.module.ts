@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,20 +12,25 @@ import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',
-      port: 3307,
-      username: 'root',
-      password: 'root',
-      database: 'meeting_room_booking_system',
-      synchronize: true,
-      logging: true,
-      entities: [User, Role, Permission],
-      connectorPackage: 'mysql2',
-      extra: {
-        authPlugin: 'sha256_password',
+    TypeOrmModule.forRootAsync({
+      async useFactory(configService: ConfigService) {
+        return {
+          type: 'mysql',
+          host: configService.get('MYSQL_HOST'),
+          port: configService.get('MYSQL_PORT'),
+          username: configService.get('MYSQL_USERNAME'),
+          password: configService.get('MYSQL_PASSWORD'),
+          database: 'meeting_room_booking_system',
+          synchronize: true,
+          logging: true,
+          entities: [User, Role, Permission],
+          connectorPackage: 'mysql2',
+          extra: {
+            authPlugin: 'sha256_password',
+          },
+        };
       },
+      inject: [ConfigService],
     }),
     ConfigModule.forRoot({
       isGlobal: true,

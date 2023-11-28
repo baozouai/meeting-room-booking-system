@@ -13,8 +13,8 @@ export class EmailService {
     private readonly configService: ConfigService,
   ) {
     this.transport = createTransport({
-      host: 'smtp.qq.com',
-      port: 587,
+      host: configService.get('EMAIL_HOST'),
+      port: configService.get('EMAIL_PORT'),
       secure: false,
       auth: {
         user: configService.get('EMAIL_AUTH_USER'),
