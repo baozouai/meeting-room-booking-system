@@ -10,7 +10,6 @@ interface UserInfo
   roles: Role[];
   permissions: Permission[];
   create_time: number;
-  update_time: number;
 }
 export class LoginUserVO {
   user_info: UserInfo;

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { IsNotEmpty, IsString, Length } from 'class-validator';
 import { Request } from 'express';
+import { JWTUserData } from 'src/user/vo/login-user.vo';
 
 export const StringNotEmpty = (name: string) => {
   return applyDecorators(
@@ -26,7 +27,8 @@ export const StringNotEmptyWithLen = (
   return applyDecorators(
     StringNotEmpty(name),
     Length(min, max, {
-      message: `${name}为 ${min} ~ ${max} 位`,
+      message:
+        min === max ? `${name} 必须为${min}位` : `${name}为 ${min} ~ ${max} 位`,
     }),
   );
 };
@@ -45,3 +47,12 @@ export const QueryParamNotEmpty = createParamDecorator(
 export const RequireLogin = () => SetMetadata('require-login', true);
 export const SetPermission = (...permissions: string[]) =>
   SetMetadata('permissions', permissions);
+
+export const UserInfo = createParamDecorator(
+  (key: keyof JWTUserData, ctx: ExecutionContext) => {
+    const request: Request = ctx.switchToHttp().getRequest();
+    const { user } = request;
+    if (!user) return null;
+    return key ? user[key] : user;
+  },
+);

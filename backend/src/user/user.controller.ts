@@ -18,7 +18,9 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { isEmail } from 'class-validator';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
-import { RequireLogin, SetPermission } from 'src/common/decorator';
+import { RequireLogin, SetPermission, UserInfo } from 'src/common/decorator';
+import { DetailUserVo } from './vo/detail-user.vo';
+import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 
 @Controller('user')
 export class UserController {
@@ -35,11 +37,6 @@ export class UserController {
   @Get()
   findAll() {
     return this.userService.findAll();
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
   }
 
   @Delete(':id')
@@ -60,8 +57,11 @@ export class UserController {
     if (!isEmail(email, {})) {
       throw new BadRequestException('邮箱格式不正确');
     }
-    const verifyCode = Math.floor(Math.random() * 1000000).toString();
-    await this.userService.sendVerifyCode(email, verifyCode);
+    await this.userService.sendVerifyCode(
+      `verify_code_${email}`,
+      email,
+      '会议室预定系统',
+    );
     return {
       code: 0,
     };
@@ -105,6 +105,65 @@ export class UserController {
     } catch (e) {
       throw new UnauthorizedException('token已失效，请重新登录');
     }
+  }
+
+  @Get('info')
+  @RequireLogin()
+  async info(@UserInfo('userId') userId: number) {
+    const user = await this.userService.findOneUserBy({
+      id: userId,
+    });
+    const detailUserVo = new DetailUserVo();
+    detailUserVo.id = user.id;
+    detailUserVo.username = user.username;
+    detailUserVo.avatar = user.avatar;
+    detailUserVo.email = user.email;
+    detailUserVo.is_admin = user.is_admin;
+    detailUserVo.is_frozen = user.is_frozen;
+    detailUserVo.phone_number = user.phone_number;
+    detailUserVo.nickname = user.nickname;
+    detailUserVo.create_time = user.create_time.getTime();
+
+    return detailUserVo;
+  }
+
+  @Get('update_password/verify_code')
+  @RequireLogin()
+  async updatePasswordByVerifyCode(@UserInfo('userId') userId: number) {
+    await this.userService.generateUpdatePasswordVerifyCode(userId);
+  }
+
+  @Post('update_password')
+  @RequireLogin()
+  async updatePassword(
+    @UserInfo('userId') userId: number,
+    @Body() passwordDto: UpdateUserPasswordDto,
+  ) {
+    return this.userService.updatePassword(userId, passwordDto);
+  }
+
+  @Post('update')
+  @RequireLogin()
+  async update(
+    @UserInfo('userId') userId: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    await this.userService.update(userId, updateUserDto);
+    return this.info(userId);
+  }
+
+  @Get('update/verify_code')
+  @RequireLogin()
+  async getUpdateVerifyCode(@UserInfo('userId') userId: number) {
+    const user = await this.userService.findOneUserBy({
+      id: userId,
+    });
+    if (!user) throw new BadRequestException('用户不存在');
+    await this.userService.sendVerifyCode(
+      `update_user_info_${userId}`,
+      user.email,
+      `会议室用户信息修改`,
+    );
   }
 
   @Get('aaa')

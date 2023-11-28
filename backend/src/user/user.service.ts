@@ -1,14 +1,16 @@
+import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, md5 } from './entities/user.entity';
-import { FindOneOptions, FindOptionsRelations, Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { EmailService } from 'src/email/email.service';
@@ -21,7 +23,7 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
-  logger = new Logger();
+  logger = new Logger(UserService.name);
 
   @InjectRepository(User)
   private readonly userRepository: Repository<User>;
@@ -53,8 +55,23 @@ export class UserService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    const { verification_code, ...rest } = updateUserDto;
+    const redisUpdateCacheKey = `update_user_info_${id}`;
+    await this.checkVerifyCode(redisUpdateCacheKey, verification_code);
+    const user = await this.findOneUserBy({ id });
+    if (!user) throw new BadRequestException('用户不存在');
+    for (const key in rest) {
+      const value = updateUserDto[key];
+      if (value !== undefined) user[key] = value;
+    }
+    try {
+      await this.userRepository.save(user);
+      await this.redisService.del(redisUpdateCacheKey);
+    } catch (e) {
+      this.logger.error(e.message, e);
+      throw new InternalServerErrorException(e);
+    }
   }
 
   remove(id: number) {
@@ -77,11 +94,10 @@ export class UserService {
     if (registerUser.password !== registerUser.confirm_password)
       throw new BadRequestException('两次密码不一致');
     const redisVerifyCodeKey = `verify_code_${registerUser.email}`;
-    const redisVerifyCode = await this.redisService.get(redisVerifyCodeKey);
-    this.logger.log(redisVerifyCode, UserService);
-    if (!redisVerifyCode) throw new BadRequestException('验证码已过期');
-    if (redisVerifyCode !== registerUser.verification_code)
-      throw new BadRequestException('验证码不正确');
+    await this.checkVerifyCode(
+      redisVerifyCodeKey,
+      registerUser.verification_code,
+    );
 
     const existUser = await this.findOneUserBy({
       username: registerUser.username,
@@ -104,16 +120,17 @@ export class UserService {
       await this.redisService.del(redisVerifyCodeKey);
       return '注册成功';
     } catch (e) {
-      this.logger.error(e, UserService);
-      return '注册失败';
+      this.logger.error(e);
+      throw new InternalServerErrorException(e);
     }
   }
 
-  async sendVerifyCode(email: string, verifyCode: string) {
-    await this.redisService.set(`verify_code_${email}`, verifyCode, 60 * 5);
+  async sendVerifyCode(key: string, email: string, subject: string) {
+    const verifyCode = Math.random().toString().slice(2, 8);
+    await this.redisService.set(key, verifyCode, 60 * 5);
     await this.emailService.senEmail({
       to: email,
-      subject: '会议室预定系统验证码',
+      subject: subject + '验证码',
       html: `<h1>验证码为： <u>${verifyCode}</u></h1>`,
     });
   }
@@ -167,7 +184,7 @@ export class UserService {
       },
       ['roles', 'roles.permissions'],
     );
-    this.logger.log(user, UserService);
+    this.logger.log(user);
     if (!user || user.password !== md5(loginUserDto.password)) {
       throw new BadRequestException('用户名或密码错误');
     }
@@ -177,7 +194,6 @@ export class UserService {
     loginUserVo.user_info = {
       ...user,
       create_time: user.create_time.getTime(),
-      update_time: user.update_time.getTime(),
       permissions: this.generatePermissions(user.roles),
     };
     return loginUserVo;
@@ -223,5 +239,53 @@ export class UserService {
       return pre;
     }, new Map<string, Permission>());
     return [...permissionMap.values()];
+  }
+
+  async generateUpdatePasswordVerifyCode(userId: number) {
+    const user = await this.findOneUserBy({ id: userId });
+    if (!user) throw new BadRequestException('用户不存在');
+
+    await this.sendVerifyCode(
+      `update_password_${userId}`,
+      user.email,
+      '会议室修改密码',
+    );
+  }
+
+  async updatePassword(
+    userId: number,
+    updateUserPasswordDto: UpdateUserPasswordDto,
+  ) {
+    const redisUpdatePasswordKey = `update_password_${userId}`;
+    await this.checkVerifyCode(
+      redisUpdatePasswordKey,
+      updateUserPasswordDto.verification_code,
+    );
+
+    const user = await this.findOneUserBy({ id: userId });
+
+    if (!user) throw new BadRequestException('用户不存在');
+    if (user.password !== md5(updateUserPasswordDto.old_password))
+      throw new BadRequestException('旧密码不正确');
+    if (user.password === md5(updateUserPasswordDto.password))
+      throw new BadRequestException('新密码不能与旧密码相同');
+
+    user.password = md5(updateUserPasswordDto.password);
+
+    try {
+      await this.userRepository.save(user);
+      await this.redisService.del(redisUpdatePasswordKey);
+    } catch (e) {
+      this.logger.error(e);
+      throw new BadRequestException(e);
+    }
+  }
+
+  async checkVerifyCode(key: string, verifyCode: string) {
+    const cacheVerifyCode = await this.redisService.get(key);
+    if (!cacheVerifyCode) throw new BadRequestException('验证码已过期');
+    if (cacheVerifyCode !== verifyCode)
+      throw new BadRequestException('验证码不正确');
+    return true;
   }
 }
