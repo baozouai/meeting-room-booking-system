@@ -21,4 +21,8 @@ export class Role {
     name: 'role_permissions',
   })
   permissions: Permission[];
+
+  constructor(partial?: Partial<Role>) {
+    if (partial) Object.assign(this, partial);
+  }
 }

@@ -58,4 +58,9 @@ export class UserController {
       code: 0,
     };
   }
+
+  @Get('init')
+  init() {
+    return this.userService.initData();
+  }
 }

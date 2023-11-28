@@ -14,4 +14,8 @@ export class Permission {
     comment: '权限描述',
   })
   description: string;
+
+  constructor(partial?: Partial<Permission>) {
+    if (partial) Object.assign(this, partial);
+  }
 }

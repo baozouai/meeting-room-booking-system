@@ -9,14 +9,9 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from './role.entity';
-import {
-  IsNotEmpty,
-  IsString,
-  Length,
-  IsEmail,
-  IsPhoneNumber,
-} from 'class-validator';
+import { IsEmail, IsPhoneNumber } from 'class-validator';
 import { createHash } from 'crypto';
+import { StringNotEmptyWithLen } from 'src/common/decorator';
 function md5(str: string) {
   const hash = createHash('md5');
   return hash.update(str).digest('hex');
@@ -30,38 +25,24 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @IsString()
-  @IsNotEmpty({
-    message: '用户名不能为空',
-  })
-  @Length(6, 50, {
-    message: '用户名长度必须为6-50位',
-  })
+  @StringNotEmptyWithLen('用户名', 6, 50)
   @Column({
     length: 50,
     comment: '用户名',
   })
   username: string;
-  @IsString()
-  @IsNotEmpty({
-    message: '用户名不能为空',
-  })
-  @Length(6, 50, {
-    message: '密码长度必须为6-50位',
-  })
+  @StringNotEmptyWithLen('密码', 6, 50)
   @Column({
     length: 50,
     comment: '密码',
   })
   password: string;
-  @IsString()
-  @IsNotEmpty({
-    message: '邮箱不能为空',
-  })
+
   @BeforeInsert()
   encryPassword() {
     this.password = md5(this.password);
   }
+
   @IsEmail()
   @Column({
     length: 50,
@@ -83,13 +64,8 @@ export class User {
     nullable: true,
   })
   avatar: string;
-  @IsString()
-  @IsNotEmpty({
-    message: '用户名不能为空',
-  })
-  @Length(6, 50, {
-    message: '昵称长度必须为6-50位',
-  })
+
+  @StringNotEmptyWithLen('昵称', 6, 50)
   @Column({
     length: 50,
     comment: '昵称',
