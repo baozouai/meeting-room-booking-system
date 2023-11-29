@@ -9,9 +9,9 @@ export interface RegisterUser {
     username: string;
     nickName: string;
     password: string;
-    confirmPassword: string;
+    confirm_password: string;
     email: string;
-    captcha: string;
+    verification_code: string;
 }
 
 const layout1 = {
@@ -29,7 +29,7 @@ export function Register() {
     const navigate = useNavigate();
 
     const onFinish = useCallback(async (values: RegisterUser) => {
-        if(values.password !== values.confirmPassword) {
+        if(values.password !== values.confirm_password) {
             return message.error('两次密码不一致');
         }
         const res = await register(values);
@@ -94,7 +94,7 @@ export function Register() {
 
             <Form.Item
                 label="确认密码"
-                name="confirmPassword"
+                name="confirm_password"
                 rules={[{ required: true, message: '请输入确认密码!' }]}
             >
                 <Input.Password />
@@ -114,7 +114,7 @@ export function Register() {
             <div className='captcha-wrapper'>
                 <Form.Item
                     label="验证码"
-                    name="captcha"
+                    name="verification_code"
                     rules={[{ required: true, message: '请输入验证码!' }]}
                 >
                     <Input />
