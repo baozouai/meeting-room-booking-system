@@ -8,7 +8,7 @@ import { updatePassword, updatePasswordCaptcha } from '../../interface/interface
 export interface UpdatePassword {
     username: string;
     email: string;
-    captcha: string;
+    verification_code: string;
     password: string;
     confirmPassword: string;
 }

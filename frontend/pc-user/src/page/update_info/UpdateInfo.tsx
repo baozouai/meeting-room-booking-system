@@ -8,10 +8,10 @@ import { InboxOutlined } from '@ant-design/icons';
 import { HeadPicUpload } from './HeadPicUpload';
 
 export interface UserInfo {
-    headPic: string;
-    nickName: string;
+    avatar: string;
+    nickname: string;
     email: string;
-    captcha: string;
+    verification_code: string;
 }
 
 const layout1 = {
@@ -56,8 +56,8 @@ export function UpdateInfo() {
 
             if(res.status === 201 || res.status === 200) {
                 
-                form.setFieldValue('headPic', data.headPic);
-                form.setFieldValue('nickName', data.nickName);
+                form.setFieldValue('avatar', data.avatar);
+                form.setFieldValue('nickname', data.nickname);
                 form.setFieldValue('email', data.email);
             }
         }
@@ -74,13 +74,13 @@ export function UpdateInfo() {
         >
             <Form.Item
                 label="头像"
-                name="headPic"
+                name="avatar"
                 rules={[
                     {  message: '请输入头像!' },
                 ]}
                 shouldUpdate
             >
-                <HeadPicUpload></HeadPicUpload>
+                <HeadPicUpload/>
             </Form.Item>
 
             <Form.Item
