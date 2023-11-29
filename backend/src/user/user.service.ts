@@ -10,7 +10,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, md5 } from './entities/user.entity';
-import { FindOneOptions, Repository } from 'typeorm';
+import { FindOneOptions, Like, Repository } from 'typeorm';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { EmailService } from 'src/email/email.service';
@@ -20,6 +20,7 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { LoginUserVO } from './vo/login-user.vo';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { UserVo } from './vo/user.vo';
 
 @Injectable()
 export class UserService {
@@ -287,5 +288,33 @@ export class UserService {
     if (cacheVerifyCode !== verifyCode)
       throw new BadRequestException('验证码不正确');
     return true;
+  }
+
+  freeUserById(userId: number) {
+    return this.userRepository.update(userId, {
+      is_frozen: true,
+    });
+  }
+
+  async findUsers(
+    offset: number,
+    limit: number,
+    username?: string,
+    nickname?: string,
+    email?: string,
+  ) {
+    const condition: FindOneOptions<User>['where'] = {};
+    if (username) condition.username = Like(`%${username}%`);
+    if (nickname) condition.nickname = Like(`%${nickname}%`);
+    if (email) condition.email = Like(`%${email}%`);
+    const [users, totalCount] = await this.userRepository.findAndCount({
+      where: condition,
+      skip: offset,
+      take: limit,
+    });
+    return {
+      users: users.map((user) => new UserVo(user)),
+      totalCount,
+    };
   }
 }

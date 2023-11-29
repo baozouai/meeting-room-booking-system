@@ -3,13 +3,13 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   Query,
   BadRequestException,
   Inject,
   UnauthorizedException,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -21,6 +21,7 @@ import { JwtService } from '@nestjs/jwt';
 import { RequireLogin, SetPermission, UserInfo } from 'src/common/decorator';
 import { DetailUserVo } from './vo/detail-user.vo';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
+import { generateParseIntPipe } from 'src/utils';
 
 @Controller('user')
 export class UserController {
@@ -163,6 +164,33 @@ export class UserController {
       `update_user_info_${userId}`,
       user.email,
       `会议室用户信息修改`,
+    );
+  }
+
+  @Post('freeze')
+  @RequireLogin()
+  async freeze(@Body('user_id') userId: number) {
+    await this.userService.freeUserById(userId);
+    return '已冻结';
+  }
+
+  @Get('list')
+  @RequireLogin()
+  async list(
+    @Query('offset', new DefaultValuePipe(0), generateParseIntPipe('offset'))
+    offset: number,
+    @Query('limit', new DefaultValuePipe(2), generateParseIntPipe('offset'))
+    limit: number,
+    @Query('username') username: string,
+    @Query('nickname') nickname: string,
+    @Query('enmail') enmail: string,
+  ) {
+    return this.userService.findUsers(
+      offset,
+      limit,
+      username,
+      nickname,
+      enmail,
     );
   }
 

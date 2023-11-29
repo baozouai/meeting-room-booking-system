@@ -50,7 +50,7 @@ import { PermissionGuard } from './permission.guard';
     }),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local'],
+      envFilePath: ['.env.local', '.env'],
     }),
     UserModule,
     RedisModule,
