@@ -131,7 +131,7 @@ export class UserController {
 
   @Get('update_password/verify_code')
   async updatePasswordByVerifyCode(@Query('username') username: string) {
-    await this.userService.generateUpdatePasswordVerifyCode(username);
+    return this.userService.generateUpdatePasswordVerifyCode(username);
   }
 
   @Post('update_password')
@@ -161,6 +161,7 @@ export class UserController {
       user.email,
       `会议室用户信息修改`,
     );
+    return '发送成功';
   }
 
   @Post('freeze')
