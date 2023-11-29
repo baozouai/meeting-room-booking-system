@@ -22,7 +22,7 @@ export const StringNotEmpty = (name: string) => {
 export const StringNotEmptyWithLen = (
   name: string,
   min?: number,
-  max?: number,
+  max = min,
 ) => {
   return applyDecorators(
     StringNotEmpty(name),

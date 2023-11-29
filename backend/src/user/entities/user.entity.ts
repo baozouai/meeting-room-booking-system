@@ -12,6 +12,7 @@ import { Role } from './role.entity';
 import { IsEmail, IsPhoneNumber } from 'class-validator';
 import { createHash } from 'crypto';
 import { StringNotEmptyWithLen } from 'src/common/decorator';
+import { ApiProperty } from '@nestjs/swagger';
 export function md5(str: string) {
   const hash = createHash('md5');
   return hash.update(str).digest('hex');
@@ -25,12 +26,19 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @ApiProperty()
+  /** 用户名 */
   @StringNotEmptyWithLen('用户名', 4, 50)
   @Column({
     length: 50,
     comment: '用户名',
   })
   username: string;
+
+  @ApiProperty({
+    type: String,
+    description: '密码',
+  })
   @StringNotEmptyWithLen('密码', 6, 50)
   @Column({
     length: 50,

@@ -3,8 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Param,
-  Delete,
   Query,
   BadRequestException,
   Inject,
@@ -12,7 +10,6 @@ import {
   DefaultValuePipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { isEmail } from 'class-validator';
@@ -22,7 +19,14 @@ import { RequireLogin, SetPermission, UserInfo } from 'src/common/decorator';
 import { DetailUserVo } from './vo/detail-user.vo';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { generateParseIntPipe } from 'src/utils';
+import {
+  ApiBadRequestResponse,
+  ApiOkResponse,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('用户')
 @Controller('user')
 export class UserController {
   @Inject(JwtService)
@@ -30,30 +34,29 @@ export class UserController {
 
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.userService.findAll();
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
-  }
-
   @Post('register')
   register(@Body() registerUser: RegisterUserDto) {
     return this.userService.register(registerUser);
   }
 
-  @Get('getVerifyCode')
+  @ApiQuery({
+    type: 'string',
+    name: 'email',
+    description: '邮箱',
+    example: 'abcd@gmai.com',
+  })
+  @ApiOkResponse({
+    description: '发送成功',
+    type: String,
+  })
+  @ApiBadRequestResponse({
+    description: '邮箱格式不正确',
+    type: String,
+  })
+  @Get('register/verify_code')
   async getVefifyCode(
-    @Query('email')
-    email: string,
+    /** 邮箱 */
+    @Query('email') /** 邮箱 */ email: string,
   ) {
     if (!isEmail(email, {})) {
       throw new BadRequestException('邮箱格式不正确');
@@ -63,9 +66,7 @@ export class UserController {
       email,
       '会议室预定系统',
     );
-    return {
-      code: 0,
-    };
+    return '发送成功';
   }
 
   @Get('init')
