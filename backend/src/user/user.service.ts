@@ -242,32 +242,38 @@ export class UserService {
     return [...permissionMap.values()];
   }
 
-  async generateUpdatePasswordVerifyCode(userId: number) {
-    const user = await this.findOneUserBy({ id: userId });
+  async generateUpdatePasswordVerifyCode(username: string) {
+    const user = await this.findOneUserBy({ username });
+
     if (!user) throw new BadRequestException('用户不存在');
 
-    await this.sendVerifyCode(
-      `update_password_${userId}`,
-      user.email,
-      '会议室修改密码',
-    );
+    try {
+      await this.sendVerifyCode(
+        `update_password_${username}`,
+        user.email,
+        '会议室修改密码',
+      );
+      return '发送成功';
+    } catch (e) {
+      throw new InternalServerErrorException(e);
+    }
   }
 
-  async updatePassword(
-    userId: number,
-    updateUserPasswordDto: UpdateUserPasswordDto,
-  ) {
-    const redisUpdatePasswordKey = `update_password_${userId}`;
+  async updatePassword(updateUserPasswordDto: UpdateUserPasswordDto) {
+    const username = updateUserPasswordDto.username;
+    const redisUpdatePasswordKey = `update_password_${username}`;
     await this.checkVerifyCode(
       redisUpdatePasswordKey,
       updateUserPasswordDto.verification_code,
     );
 
-    const user = await this.findOneUserBy({ id: userId });
+    const user = await this.findOneUserBy({
+      username,
+    });
 
     if (!user) throw new BadRequestException('用户不存在');
-    if (user.password !== md5(updateUserPasswordDto.old_password))
-      throw new BadRequestException('旧密码不正确');
+    // if (user.password !== md5(updateUserPasswordDto.old_password))
+    //   throw new BadRequestException('旧密码不正确');
     if (user.password === md5(updateUserPasswordDto.password))
       throw new BadRequestException('新密码不能与旧密码相同');
 
@@ -284,6 +290,7 @@ export class UserService {
 
   async checkVerifyCode(key: string, verifyCode: string) {
     const cacheVerifyCode = await this.redisService.get(key);
+
     if (!cacheVerifyCode) throw new BadRequestException('验证码已过期');
     if (cacheVerifyCode !== verifyCode)
       throw new BadRequestException('验证码不正确');

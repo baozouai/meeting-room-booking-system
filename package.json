@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "husky install",
     "start": "run-p start:*",
-    "start:pc": "pnpm -C frontend/pc dev",
+    "start:pc-user": "pnpm -C frontend/pc-user dev",
     "start:backend": "pnpm -C backend start:dev"
   },
   "repository": {

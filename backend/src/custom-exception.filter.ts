@@ -17,7 +17,8 @@ export class CustomExceptionFilter implements ExceptionFilter {
     ).message;
     response.status(exception.getStatus()).json({
       code: exception.getStatus(),
-      message: Array.isArray(exceptionMessage)
+      message: 'fail',
+      data: Array.isArray(exceptionMessage)
         ? exceptionMessage.join(',')
         : exceptionMessage,
     });

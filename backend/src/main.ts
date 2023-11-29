@@ -16,6 +16,8 @@ async function bootstrap() {
     new InvokeRecordInterceptor(),
   );
 
+  app.enableCors();
+
   app.useGlobalFilters(new CustomExceptionFilter());
 
   const config = new DocumentBuilder()
@@ -34,7 +36,11 @@ async function bootstrap() {
     },
   ]);
 
-  const configService = app.get(ConfigService);
+  const configService = app.get(
+    ConfigService<{
+      NEST_SERVER_PORT: string;
+    }>,
+  );
   await app.listen(configService.get('NEST_SERVER_PORT'));
 }
 bootstrap();

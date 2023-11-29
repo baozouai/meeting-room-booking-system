@@ -130,18 +130,13 @@ export class UserController {
   }
 
   @Get('update_password/verify_code')
-  @RequireLogin()
-  async updatePasswordByVerifyCode(@UserInfo('userId') userId: number) {
-    await this.userService.generateUpdatePasswordVerifyCode(userId);
+  async updatePasswordByVerifyCode(@Query('username') username: string) {
+    await this.userService.generateUpdatePasswordVerifyCode(username);
   }
 
   @Post('update_password')
-  @RequireLogin()
-  async updatePassword(
-    @UserInfo('userId') userId: number,
-    @Body() passwordDto: UpdateUserPasswordDto,
-  ) {
-    return this.userService.updatePassword(userId, passwordDto);
+  async updatePassword(@Body() passwordDto: UpdateUserPasswordDto) {
+    return this.userService.updatePassword(passwordDto);
   }
 
   @Post('update')
