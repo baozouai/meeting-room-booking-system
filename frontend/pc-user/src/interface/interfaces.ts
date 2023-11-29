@@ -90,7 +90,7 @@ export async function login(username: string, password: string) {
 export async function registerCaptcha(email: string) {
     return await axiosInstance.get('/user/register/verify_code', {
         params: {
-            address: email
+            email
         }
     });
 }

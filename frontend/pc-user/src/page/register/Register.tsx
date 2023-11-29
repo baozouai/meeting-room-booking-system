@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 export interface RegisterUser {
     username: string;
-    nickName: string;
+    nickname: string;
     password: string;
     confirm_password: string;
     email: string;
@@ -45,12 +45,12 @@ export function Register() {
     }, []);
 
     const sendCaptcha = useCallback(async function () {
-        const address = form.getFieldValue('email');
-        if(!address) {
+        const email = form.getFieldValue('email');
+        if(!email) {
             return message.error('请输入邮箱地址');
         }
 
-        const res = await registerCaptcha(address);
+        const res = await registerCaptcha(email);
         if(res.status === 201 || res.status === 200) {
             message.success(res.data.data);
         } else {
@@ -78,7 +78,7 @@ export function Register() {
 
             <Form.Item
                 label="昵称"
-                name="nickName"
+                name="nickname"
                 rules={[{ required: true, message: '请输入昵称!' }]}
             >
                 <Input />
