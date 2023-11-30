@@ -1,9 +1,11 @@
-import { Badge, Button, Form, Input, Popconfirm, Table, message } from "antd";
+import { Badge, Button, Form, Image, Input, Modal, Popconfirm, Table, message } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import './meeting_room_list.css';
+import './meeting_room_manage.css';
 import { ColumnsType } from "antd/es/table";
 import { useForm } from "antd/es/form/Form";
-import { searchMeetingRoomList } from "../../interface/interfaces";
+import { deleteMeetingRoom, meetingRoomList } from "../../interfaces/interfaces";
+import { CreateMeetingRoomModal } from "./CreateMeetingRoomModal";
+import { UpdateMeetingRoomModal } from "./UpdateMeetingRoomModal";
 
 interface SearchMeetingRoom {
     name: string;
@@ -11,7 +13,7 @@ interface SearchMeetingRoom {
     equipment: string;
 }
 
-interface MeetingRoomSearchResult {
+export interface MeetingRoomSearchResult {
     id: number,
     name: string;
     capacity: number;
@@ -23,11 +25,15 @@ interface MeetingRoomSearchResult {
     updateTime: Date;
 }
 
-export function MeetingRoomList() {
-    const [offset, setoffset] = useState<number>(1);
-    const [limit, setPageSize] = useState<number>(10);
 
+export function MeetingRoomManage() {
+    const [offset, setPageNo] = useState<number>(1);
+    const [limit, setPageSize] = useState<number>(10);
     const [meetingRoomResult, setMeetingRoomResult] = useState<Array<MeetingRoomSearchResult>>([]);
+    const [num, setNum] = useState<number>();
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    const [updateId, setUpdateId] = useState<number>();
 
     const columns: ColumnsType<MeetingRoomSearchResult> = useMemo(() => [
         {
@@ -69,14 +75,38 @@ export function MeetingRoomList() {
             title: '操作',
             render: (_, record) => (
                 <div>
-                    <a href="#">预定</a>
+                    <Popconfirm
+                        title="会议室删除"
+                        description="确认删除吗？"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                    >  
+                        <a href="#">删除</a>
+                    </Popconfirm>
+                    <br/>
+                    <a href="#" onClick={() => {
+                        setIsUpdateModalOpen(true);
+                        setUpdateId(record.id);
+                    }}>更新</a>
                 </div>
             )
         }
     ], []);
 
+    const handleDelete = useCallback(async (id: number) => {
+        try {
+            await deleteMeetingRoom(id);
+            message.success('删除成功');
+            setNum(Math.random());
+        } catch(e) {
+            console.log(e);
+            message.error('删除失败');
+        }
+    }, []);
+
     const searchMeetingRoom = useCallback(async (values: SearchMeetingRoom) => {
-        const res = await searchMeetingRoomList(values.name, values.capacity, values.equipment, offset, limit);
+        const res = await meetingRoomList(values.name, values.capacity, values.equipment, offset, limit);
 
         const { data } = res.data;
         if(res.status === 201 || res.status === 200) {
@@ -99,15 +129,15 @@ export function MeetingRoomList() {
             capacity: form.getFieldValue('capacity'),
             equipment: form.getFieldValue('equipment')
         });
-    }, [offset, limit]);
+    }, [offset, limit, num]);
 
     const changePage = useCallback(function(offset: number, limit: number) {
-        setoffset(offset);
+        setPageNo(offset);
         setPageSize(limit);
     }, []);
 
-    return <div id="meetingRoomList-container">
-        <div className="meetingRoomList-form">
+    return <div id="meetingRoomManage-container">
+        <div className="meetingRoomManage-form">
             <Form
                 form={form}
                 onFinish={searchMeetingRoom}
@@ -131,15 +161,30 @@ export function MeetingRoomList() {
                     <Button type="primary" htmlType="submit">
                         搜索会议室
                     </Button>
+                    <Button type="primary" style={{background: 'green'}} onClick={
+                        () => setIsCreateModalOpen(true)
+                    }>
+                        添加会议室
+                    </Button>
+
                 </Form.Item>
             </Form>
         </div>
-        <div className="meetingRoomList-table">
+        <div className="meetingRoomManage-table">
             <Table columns={columns} dataSource={meetingRoomResult} pagination={ {
                 current: offset,
                 limit: limit,
                 onChange: changePage
             }}/>
         </div>
+        <CreateMeetingRoomModal isOpen={isCreateModalOpen} handleClose={() => {
+            setIsCreateModalOpen(false);
+            setNum(Math.random());
+        }}></CreateMeetingRoomModal>
+        <UpdateMeetingRoomModal id={updateId!} isOpen={isUpdateModalOpen} handleClose={() => {
+            setIsUpdateModalOpen(false);
+            setNum(Math.random());
+        }}></UpdateMeetingRoomModal>
+
     </div>
 }

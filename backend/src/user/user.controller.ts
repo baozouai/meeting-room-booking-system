@@ -10,6 +10,7 @@ import {
   DefaultValuePipe,
   UseInterceptors,
   UploadedFile,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -104,6 +105,7 @@ export class UserController {
           email: user.email,
           id: userId,
           roles: user.roles,
+          is_admin: user.is_admin,
           permissions: this.userService.generatePermissions(user.roles),
         });
       return {
@@ -137,6 +139,11 @@ export class UserController {
 
   @Get('update_password/verify_code')
   async updatePasswordByVerifyCode(@Query('username') username: string) {
+    return this.userService.generateUpdatePasswordVerifyCode(username);
+  }
+  @RequireLogin()
+  @Get('update_password/admin/verify_code')
+  async updateAminPasswordByVerifyCode(@UserInfo('username') username: string) {
     return this.userService.generateUpdatePasswordVerifyCode(username);
   }
 
@@ -197,10 +204,13 @@ export class UserController {
     return '发送成功';
   }
 
-  @Post('freeze')
+  @Post('change_frozen_status')
   @RequireLogin()
-  async freeze(@Body('user_id') userId: number) {
-    await this.userService.freeUserById(userId);
+  async changeFrozenStatus(
+    @Body('user_id') userId: number,
+    @Body('is_frozen', ParseBoolPipe) is_frozen: boolean,
+  ) {
+    await this.userService.changeFrozenStatusById(userId, is_frozen);
     return '已冻结';
   }
 
@@ -214,6 +224,7 @@ export class UserController {
     @Query('username') username: string,
     @Query('nickname') nickname: string,
     @Query('enmail') enmail: string,
+    @UserInfo('is_admin') isAdmin: boolean,
   ) {
     return this.userService.findUsers(
       offset,

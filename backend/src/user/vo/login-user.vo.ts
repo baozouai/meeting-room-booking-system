@@ -18,6 +18,6 @@ export class LoginUserVO {
 }
 
 export interface JWTUserData
-  extends Pick<UserInfo, 'username' | 'roles' | 'permissions'> {
+  extends Pick<UserInfo, 'username' | 'roles' | 'permissions' | 'is_admin'> {
   userId: number;
 }

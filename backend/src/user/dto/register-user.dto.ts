@@ -1,7 +1,7 @@
 import { PickType } from '@nestjs/mapped-types';
-import { IsString, Length } from 'class-validator';
+import { Length } from 'class-validator';
 import { User } from '../entities/user.entity';
-import { StringNotEmpty, StringNotEmptyWithLen } from 'src/common/decorator';
+import { StringNotEmpty } from 'src/common/decorator';
 
 export class RegisterUserDto extends PickType(User, [
   'username',

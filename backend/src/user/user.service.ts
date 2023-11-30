@@ -189,6 +189,7 @@ export class UserService {
     const user = await this.findOneUserBy(
       {
         username: loginUserDto.username,
+        is_admin: loginUserDto.is_admin,
       },
       ['roles', 'roles.permissions'],
     );
@@ -210,10 +211,10 @@ export class UserService {
   async generateToken(
     userInfo: Pick<
       LoginUserVO['user_info'],
-      'username' | 'id' | 'roles' | 'permissions' | 'email'
+      'username' | 'id' | 'roles' | 'permissions' | 'email' | 'is_admin'
     >,
   ) {
-    const { username, id, roles, permissions, email } = userInfo;
+    const { username, id, roles, permissions, email, is_admin } = userInfo;
     const access_token = this.jwtService.sign(
       {
         username,
@@ -221,6 +222,7 @@ export class UserService {
         roles,
         permissions,
         email,
+        is_admin,
       },
       {
         expiresIn:
@@ -305,9 +307,9 @@ export class UserService {
     return true;
   }
 
-  freeUserById(userId: number) {
+  async changeFrozenStatusById(userId: number, is_frozen: boolean) {
     return this.userRepository.update(userId, {
-      is_frozen: true,
+      is_frozen,
     });
   }
 
@@ -318,7 +320,9 @@ export class UserService {
     nickname?: string,
     email?: string,
   ) {
-    const condition: FindOneOptions<User>['where'] = {};
+    const condition: FindOneOptions<User>['where'] = {
+      is_admin: false,
+    };
     if (username) condition.username = Like(`%${username}%`);
     if (nickname) condition.nickname = Like(`%${nickname}%`);
     if (email) condition.email = Like(`%${email}%`);
