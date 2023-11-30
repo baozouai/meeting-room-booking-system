@@ -8,6 +8,8 @@ import {
   Inject,
   UnauthorizedException,
   DefaultValuePipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -25,7 +27,10 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-
+import { FileInterceptor } from '@nestjs/platform-express';
+import { extname } from 'path';
+import { storage } from 'src/custom-storage';
+import { unlinkSync, existsSync } from 'fs';
 @ApiTags('用户')
 @Controller('user')
 export class UserController {
@@ -96,6 +101,7 @@ export class UserController {
       const [access_token, new_refresh_token] =
         await this.userService.generateToken({
           username,
+          email: user.email,
           id: userId,
           roles: user.roles,
           permissions: this.userService.generatePermissions(user.roles),
@@ -140,13 +146,40 @@ export class UserController {
   }
 
   @Post('update')
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      dest: 'uploads',
+      storage,
+      fileFilter(_, file, cb) {
+        const ext = extname(file.originalname);
+        if (/\.(png|jpe?g|gif)/.test(ext)) {
+          cb(null, true);
+        }
+        // else if (file.size > 1024 * 1024 * 3) {
+        //   cb(new BadRequestException('请上传小于3m的头像'), false);
+        // }
+        else {
+          cb(new BadRequestException('只支持png、jpg、jpeg、gif的图片'), false);
+        }
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 3,
+      },
+    }),
+  )
   @RequireLogin()
   async update(
     @UserInfo('userId') userId: number,
     @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile() avatar?: Express.Multer.File,
   ) {
-    await this.userService.update(userId, updateUserDto);
-    return this.info(userId);
+    try {
+      await this.userService.update(userId, updateUserDto, avatar?.path);
+      return this.info(userId);
+    } catch (e) {
+      if (avatar && existsSync(avatar.path)) unlinkSync(avatar.path);
+      throw e;
+    }
   }
 
   @Get('update/verify_code')

@@ -19,7 +19,9 @@ async function bootstrap() {
   app.enableCors();
 
   app.useGlobalFilters(new CustomExceptionFilter());
-
+  app.useStaticAssets('uploads', {
+    prefix: '/uploads',
+  });
   const config = new DocumentBuilder()
     .setTitle('会议室预定系统')
     .setDescription('会议室预定系统接口文档')

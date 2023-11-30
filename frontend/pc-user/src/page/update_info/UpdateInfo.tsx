@@ -2,7 +2,7 @@ import { Button, Form, Input, message } from 'antd';
 import { useForm } from 'antd/es/form/Form';
 import { useCallback, useEffect, useState } from 'react';
 import './update_info.css';
-import { getUserInfo, updateInfo, updateUserInfoCaptcha } from '../../interface/interfaces';
+import { BASE_URL, getUserInfo, updateInfo, updateUserInfoCaptcha } from '../../interface/interfaces';
 import { useNavigate } from 'react-router-dom';
 import { InboxOutlined } from '@ant-design/icons';
 import { HeadPicUpload } from './HeadPicUpload';
@@ -24,7 +24,14 @@ export function UpdateInfo() {
     const navigate = useNavigate();
 
     const onFinish = useCallback(async (values: UserInfo) => {
-        const res = await updateInfo(values);
+        const { avatar, ...rest} = values
+
+        const data = new FormData()
+        if (avatar instanceof File) data.append('avatar', avatar)
+        for (const key in rest) {
+            data.append(key, rest[key as keyof typeof rest])
+        }
+        const res = await updateInfo(data);
     
         if(res.status === 201 || res.status === 200) {
             const { message: msg, data} = res.data;
@@ -35,7 +42,7 @@ export function UpdateInfo() {
                 message.error(data);
             }
         } else {
-            message.error('系统繁忙，请稍后再试');
+            message.error(res.data.data || '系统繁忙，请稍后再试');
         }
     }, []);
 
@@ -53,12 +60,12 @@ export function UpdateInfo() {
             const res = await getUserInfo();
 
             const { data } = res.data;
+            const { avatar, nickname } = data
 
             if(res.status === 201 || res.status === 200) {
                 
-                form.setFieldValue('avatar', data.avatar);
-                form.setFieldValue('nickname', data.nickname);
-                form.setFieldValue('email', data.email);
+                if (avatar) form.setFieldValue('avatar', `${BASE_URL}${data.avatar}`);
+                form.setFieldValue('nickname', nickname);
             }
         }
         query();
@@ -75,12 +82,9 @@ export function UpdateInfo() {
             <Form.Item
                 label="头像"
                 name="avatar"
-                rules={[
-                    {  message: '请输入头像!' },
-                ]}
                 shouldUpdate
             >
-                <HeadPicUpload/>
+                <HeadPicUpload />
             </Form.Item>
 
             <Form.Item
@@ -93,16 +97,6 @@ export function UpdateInfo() {
                 <Input />
             </Form.Item>
 
-            <Form.Item
-                label="邮箱"
-                name="email"
-                rules={[
-                    { required: true, message: '请输入邮箱!' },
-                    { type: "email", message: '请输入合法邮箱地址!'}
-                ]}
-            >
-                <Input disabled/>
-            </Form.Item>
 
             <div className='captcha-wrapper'>
                 <Form.Item

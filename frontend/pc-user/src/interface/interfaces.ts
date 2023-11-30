@@ -3,9 +3,9 @@ import { RegisterUser } from "@/page/register/Register";
 import { UpdatePassword } from "@/page/update_password/UpdatePassword";
 import { UserInfo } from "@/page/update_info/UpdateInfo";
 import { message } from "antd";
-
+export const BASE_URL = 'http://localhost:3000/'
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:3000/',
+    baseURL: BASE_URL,
     timeout: 3000
 });
 
@@ -115,7 +115,7 @@ export async function getUserInfo() {
     return await axiosInstance.get('/user/info');
 }
 
-export async function updateInfo(data: UserInfo) {
+export async function updateInfo(data: any) {
     return await axiosInstance.post('/user/update', data);
 }
 

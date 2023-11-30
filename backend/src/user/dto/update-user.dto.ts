@@ -4,10 +4,11 @@ import { StringNotEmpty } from 'src/common/decorator';
 import { Length } from 'class-validator';
 
 export class UpdateUserDto extends PickType(PartialType(User), [
-  'avatar',
+  // 'avatar',
   'email',
   'nickname',
 ]) {
+  // avatar: File;
   /** 验证码 */
   @StringNotEmpty('验证码')
   @Length(6, 6, {

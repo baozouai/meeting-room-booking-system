@@ -21,6 +21,7 @@ import { LoginUserVO } from './vo/login-user.vo';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserVo } from './vo/user.vo';
+import { existsSync, unlinkSync } from 'fs';
 
 @Injectable()
 export class UserService {
@@ -56,7 +57,7 @@ export class UserService {
     return `This action returns a #${id} user`;
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  async update(id: number, updateUserDto: UpdateUserDto, avatar?: string) {
     const { verification_code, ...rest } = updateUserDto;
     const redisUpdateCacheKey = `update_user_info_${id}`;
     await this.checkVerifyCode(redisUpdateCacheKey, verification_code);
@@ -66,9 +67,15 @@ export class UserService {
       const value = updateUserDto[key];
       if (value !== undefined) user[key] = value;
     }
+    let preAvatarToDel: string;
+    if (avatar) {
+      preAvatarToDel = user.avatar;
+      user.avatar = avatar;
+    }
     try {
       await this.userRepository.save(user);
       await this.redisService.del(redisUpdateCacheKey);
+      if (existsSync(preAvatarToDel)) unlinkSync(preAvatarToDel);
     } catch (e) {
       this.logger.error(e.message, e);
       throw new InternalServerErrorException(e);
@@ -203,16 +210,17 @@ export class UserService {
   async generateToken(
     userInfo: Pick<
       LoginUserVO['user_info'],
-      'username' | 'id' | 'roles' | 'permissions'
+      'username' | 'id' | 'roles' | 'permissions' | 'email'
     >,
   ) {
-    const { username, id, roles, permissions } = userInfo;
+    const { username, id, roles, permissions, email } = userInfo;
     const access_token = this.jwtService.sign(
       {
         username,
         userId: id,
         roles,
         permissions,
+        email,
       },
       {
         expiresIn:

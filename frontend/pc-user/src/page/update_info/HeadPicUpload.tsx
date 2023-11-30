@@ -1,43 +1,50 @@
-import { InboxOutlined } from "@ant-design/icons";
-import { message } from "antd";
-import Dragger, { DraggerProps } from "antd/es/upload/Dragger";
+import {  PlusOutlined } from "@ant-design/icons";
+import {  Upload } from "antd";
+import { useEffect, useState } from "react";
 
 interface HeadPicUploadProps {
     value?: string;
-    onChange?: Function
+    onChange?: (file: File) => void
 }
 
-let onChange: Function;
 
-const props: DraggerProps = {
-    name: 'file',
-    action: 'http://localhost:3000/user/upload',
-    onChange(info) {
-        const { status } = info.file;
-        if (status === 'done') {
-            onChange(info.file.response.data);
-            message.success(`${info.file.name} 文件上传成功`);
-        } else if (status === 'error') {
-            message.error(`${info.file.name} 文件上传失败`);
-        }
-    }
-};
 
-const dragger = <Dragger {...props}>
-    <p className="ant-upload-drag-icon">
-        <InboxOutlined />
-    </p>
-    <p className="ant-upload-text">点击或拖拽文件到这个区域来上传</p>
-</Dragger>
+const getBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
-export function HeadPicUpload(props: HeadPicUploadProps) {
+export function HeadPicUpload({ value, onChange }: HeadPicUploadProps) {
+    const [avatarUrl, setAvatarUrl] = useState(value)
+    useEffect(() => {
+      if (value && !(value instanceof File)) {
+        setAvatarUrl(value)
+      }
+    }, [value])
 
-    onChange = props.onChange!
+    const uploadButton = (
+        <div>
+        <PlusOutlined />
+        <div style={{ marginTop: 8 }}>Upload</div>
+        </div>
+    );
 
-    return props?.value ? <div>
-        <img src={props.value} alt="头像" />
-        {dragger}
-    </div>: <div>
-        {dragger}
-    </div>
+    return (
+    <Upload
+        name='avatar'
+        accept=".png,.jpeg,.jpg,.gif"
+        listType="picture-card"
+        showUploadList={false}
+        beforeUpload={async (file) => {
+            const url = await getBase64(file as unknown as File)
+            setAvatarUrl(url);
+            onChange && onChange(file)
+            return false
+        }}
+  >
+    { avatarUrl ? <img src={`${avatarUrl}`} alt="avatar" style={{ width: '90%' }} />: uploadButton}
+  </Upload>)
 }
