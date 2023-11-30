@@ -219,7 +219,7 @@ export class UserController {
   async list(
     @Query('offset', new DefaultValuePipe(0), generateParseIntPipe('offset'))
     offset: number,
-    @Query('limit', new DefaultValuePipe(2), generateParseIntPipe('offset'))
+    @Query('limit', new DefaultValuePipe(2), generateParseIntPipe('limit'))
     limit: number,
     @Query('username') username: string,
     @Query('nickname') nickname: string,

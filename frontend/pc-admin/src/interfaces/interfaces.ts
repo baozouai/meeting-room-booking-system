@@ -195,3 +195,7 @@ export async function userBookingCount(startTime: string, endTime: string) {
         }
     });
 }
+
+export async function getEquipments() {
+    return await axiosInstance.get('/equipment');
+}

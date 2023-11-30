@@ -13,6 +13,10 @@ import { EmailModule } from './email/email.module';
 import { APP_GUARD } from '@nestjs/core';
 import { LoginGuard } from './login.guard';
 import { PermissionGuard } from './permission.guard';
+import { MeetingRoomModule } from './meeting-room/meeting-room.module';
+import { MeetingRoom } from './meeting-room/entities/meeting-room.entity';
+import { Equipment } from './equipment/entities/equipment.entity';
+import { EquipmentModule } from './equipment/equipment.module';
 
 @Module({
   imports: [
@@ -39,7 +43,7 @@ import { PermissionGuard } from './permission.guard';
           database: 'meeting_room_booking_system',
           synchronize: true,
           logging: true,
-          entities: [User, Role, Permission],
+          entities: [User, Role, Permission, MeetingRoom, Equipment],
           connectorPackage: 'mysql2',
           extra: {
             authPlugin: 'sha256_password',
@@ -55,6 +59,8 @@ import { PermissionGuard } from './permission.guard';
     UserModule,
     RedisModule,
     EmailModule,
+    MeetingRoomModule,
+    EquipmentModule,
   ],
   controllers: [AppController],
   providers: [

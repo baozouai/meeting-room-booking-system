@@ -6,6 +6,7 @@ import { useForm } from "antd/es/form/Form";
 import { deleteMeetingRoom, meetingRoomList } from "../../interfaces/interfaces";
 import { CreateMeetingRoomModal } from "./CreateMeetingRoomModal";
 import { UpdateMeetingRoomModal } from "./UpdateMeetingRoomModal";
+import dayjs from "dayjs";
 
 interface SearchMeetingRoom {
     name: string;
@@ -50,7 +51,10 @@ export function MeetingRoomManage() {
         },
         {
             title: '设备',
-            dataIndex: 'equipment'
+            dataIndex: 'equipments',
+            render(value) {
+                return value.map(item => item.name).join(',')
+            }
         },
         {
             title: '描述',
@@ -58,11 +62,18 @@ export function MeetingRoomManage() {
         },
         {
             title: '添加时间',
-            dataIndex: 'create_time'
+            dataIndex: 'create_time',
+            render:(v) => {
+                return dayjs(v).format('YYYY-MM-DD HH:mm:ss')
+            }
         },
         {
             title: '上次更新时间',
-            dataIndex: 'updateTime'
+            dataIndex: 'update_time',
+            render:(v) => {
+                return dayjs(v).format('YYYY-MM-DD HH:mm:ss')
+                
+            }
         },
         {
             title: '预定状态',
@@ -110,7 +121,7 @@ export function MeetingRoomManage() {
 
         const { data } = res.data;
         if(res.status === 201 || res.status === 200) {
-            setMeetingRoomResult(data.meetingRooms.map((item: MeetingRoomSearchResult) => {
+            setMeetingRoomResult(data.meeting_rooms.map((item: MeetingRoomSearchResult) => {
                 return {
                     key: item.id,
                     ...item
