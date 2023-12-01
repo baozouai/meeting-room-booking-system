@@ -4,7 +4,7 @@ import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Equipment } from './entities/equipment.entity';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Not, Repository } from 'typeorm';
 
 @Injectable()
 export class EquipmentService {
@@ -15,16 +15,18 @@ export class EquipmentService {
     return this.equipmentRepository.insert(createEquipmentDto);
   }
 
-  findAll(is_used: boolean) {
+  findAll(include_used: boolean) {
     return this.equipmentRepository.find({
       where: {
-        is_used,
+        mettingRoom: include_used ? undefined : IsNull(),
       },
+      relations: ['mettingRoom'],
     });
   }
-  findByIds(ids: number[]) {
-    return this.equipmentRepository.findBy({
-      id: In(ids),
+  findByIds(ids: number[], needMeetingRoom = false) {
+    return this.equipmentRepository.find({
+      where: { id: In(ids) },
+      relations: needMeetingRoom ? ['mettingRoom'] : undefined,
     });
   }
 
@@ -36,7 +38,7 @@ export class EquipmentService {
     const equipment = await this.findOne(id);
     if (!equipment) throw new BadRequestException('更新设备不存在');
     await this.equipmentRepository.update(id, updateEquipmentDto);
-    return '更新成功1';
+    return '更新成功';
   }
 
   remove(id: number) {

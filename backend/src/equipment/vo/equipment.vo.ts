@@ -13,7 +13,7 @@ export class EquipmentVo {
       this.id = equipment.id;
       this.name = equipment.name;
       this.description = equipment.description;
-      this.is_used = equipment.is_used;
+      this.is_used = !!equipment.mettingRoom;
       this.create_time = equipment.create_time.getTime();
       this.meeting_room_id = equipment.mettingRoom?.id ?? null;
     }

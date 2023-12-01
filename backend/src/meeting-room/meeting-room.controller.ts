@@ -3,11 +3,9 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  ParseIntPipe,
   Query,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { MeetingRoomService } from './meeting-room.service';
 import { CreateMeetingRoomDto } from './dto/create-meeting-room.dto';
@@ -24,13 +22,8 @@ export class MeetingRoomController {
     return '创建成功';
   }
 
-  @Get()
-  findAll() {
-    return this.meetingRoomService.findAll();
-  }
-
   @Get('list')
-  async findOne(
+  async findList(
     @Query('name') name: string,
     @Query('capacity') capacity: number,
     @Query('equipment_ids') equipment_ids: number[],
@@ -52,5 +45,24 @@ export class MeetingRoomController {
       ),
       total_counts,
     };
+  }
+
+  @Get('delete')
+  async remove(@Query('id') id: number) {
+    await this.meetingRoomService.remove(id);
+    return '删除成功';
+  }
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const meetingRoom = await this.meetingRoomService.findOne(id);
+    return new MeetingRoomVo(meetingRoom);
+  }
+  @Post('update')
+  async update(
+    @Body('id') id: number,
+    @Body() updateMeetingRoomDto: UpdateMeetingRoomDto,
+  ) {
+    await this.meetingRoomService.update(id, updateMeetingRoomDto);
+    return '更新成功';
   }
 }

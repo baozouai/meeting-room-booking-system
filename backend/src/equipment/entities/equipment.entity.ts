@@ -8,6 +8,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  BeforeUpdate,
 } from 'typeorm';
 
 @Entity()
@@ -34,12 +35,6 @@ export class Equipment {
   })
   description: string;
 
-  @Column({
-    comment: '是否被使用',
-    default: false,
-  })
-  is_used: boolean;
-
   @CreateDateColumn({
     comment: '创建时间',
   })
@@ -52,6 +47,8 @@ export class Equipment {
   @JoinColumn({
     name: 'meeting_room_id',
   })
-  @ManyToOne(() => MeetingRoom)
+  @ManyToOne(() => MeetingRoom, {
+    onDelete: 'SET NULL',
+  })
   mettingRoom: MeetingRoom | null;
 }

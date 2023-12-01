@@ -1,13 +1,15 @@
-import { Button, Form, Input, InputNumber, Modal, message } from "antd";
+import { Form, Input, InputNumber, Modal, Select, message } from "antd";
 import { useForm } from "antd/es/form/Form";
 import TextArea from "antd/es/input/TextArea";
 import { useCallback, useEffect } from "react";
 import { findMeetingRoom, updateMeetingRoom } from "../../interfaces/interfaces";
+import { useGetEquipments } from "@/hooks";
 
 interface UpdateMeetingRoomModalProps {
     id: number;
     isOpen: boolean;
-    handleClose: Function
+    handleClose: () => void
+    onOk: () => void
 }
 const layout = {
     labelCol: { span: 6 },
@@ -19,19 +21,27 @@ export interface UpdateMeetingRoom {
     name: string;
     capacity: number;
     location: string;
-    equipment: string;
+    equipment_ids: number[];
     description: string;
 }
 
-export function UpdateMeetingRoomModal(props: UpdateMeetingRoomModalProps) {
+export function UpdateMeetingRoomModal({id, isOpen, handleClose, onOk}: UpdateMeetingRoomModalProps) {
 
     const [form] = useForm<UpdateMeetingRoom>();
+    const [equipments, getEquipments] = useGetEquipments({include_used: true, meeting_room_id: id})
 
+   
+
+    useEffect(() => {
+        if (isOpen) {
+            getEquipments()
+        }
+    }, [isOpen, getEquipments])
     const handleOk = useCallback(async function() {
         const values = form.getFieldsValue();
 
         values.description = values.description || '';
-        values.equipment = values.equipment || '';
+        values.equipment_ids = values.equipment_ids || [];
 
         const res = await updateMeetingRoom({
             ...values,
@@ -40,18 +50,20 @@ export function UpdateMeetingRoomModal(props: UpdateMeetingRoomModalProps) {
 
         if(res.status === 201 || res.status === 200) {
             message.success('更新成功');
-            props.handleClose();
+            handleClose();
+            onOk()
         } else {
             message.error(res.data.data);
         }
     }, []);
 
     useEffect(() => {
+        if (!isOpen) return
         async function query() {
-            if(!props.id) {
+            if(!id) {
                 return;
             }
-            const res = await findMeetingRoom(props.id);
+            const res = await findMeetingRoom(id);
             
             const { data } = res;
             if(res.status === 200 || res.status === 201) {
@@ -59,7 +71,7 @@ export function UpdateMeetingRoomModal(props: UpdateMeetingRoomModalProps) {
                 form.setFieldValue('name', data.data.name);
                 form.setFieldValue('location', data.data.location);
                 form.setFieldValue('capacity', data.data.capacity);
-                form.setFieldValue('equipment', data.data.equipment);
+                form.setFieldValue('equipment_ids', data.data.equipments?.map(({ id }: { id: number}) => id));
                 form.setFieldValue('description', data.data.description);
             } else {
                 message.error(res.data.data);
@@ -67,9 +79,9 @@ export function UpdateMeetingRoomModal(props: UpdateMeetingRoomModalProps) {
         }
         
         query();
-    }, [props.id]);
+    }, [id, isOpen]);
 
-    return <Modal title="更新会议室" open={props.isOpen} onOk={handleOk} onCancel={() => props.handleClose()} okText={'更新'}>
+    return <Modal title="更新会议室" open={isOpen} onOk={handleOk} onCancel={() => handleClose()} okText={'更新'}>
         <Form
             form={form}
             colon={false}
@@ -104,9 +116,9 @@ export function UpdateMeetingRoomModal(props: UpdateMeetingRoomModalProps) {
             </Form.Item>
             <Form.Item
                 label="设备"
-                name="equipment"
+                name="equipment_ids"
             >
-                <Input />
+                <Select mode='multiple' options={equipments}/>
             </Form.Item>
             <Form.Item
                 label="描述"

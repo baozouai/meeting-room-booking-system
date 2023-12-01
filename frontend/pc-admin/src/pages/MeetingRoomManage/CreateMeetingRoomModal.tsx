@@ -1,8 +1,9 @@
 import {  Form, Input, InputNumber, Modal, Select, message } from "antd";
 import { useForm } from "antd/es/form/Form";
 import TextArea from "antd/es/input/TextArea";
-import { useCallback, useEffect, useState } from "react";
-import { createMeetingRoom, getEquipments } from "../../interfaces/interfaces";
+import { useCallback, useEffect } from "react";
+import { createMeetingRoom } from "../../interfaces/interfaces";
+import { useGetEquipments } from "@/hooks";
 
 interface CreateMeetingRoomModalProps {
     isOpen: boolean;
@@ -21,25 +22,19 @@ export interface CreateMeetingRoom {
     description: string;
 }
 
-export function CreateMeetingRoomModal(props: CreateMeetingRoomModalProps) {
+export function CreateMeetingRoomModal({
+    isOpen,
+    handleClose,
+
+}: CreateMeetingRoomModalProps) {
 
     const [form] = useForm<CreateMeetingRoom>();
-    const [equipmentOptions, setEquipmentOptions] = useState<{label: string, value: number}[]>([])
+    const [equipmentOptions, getEquipments] = useGetEquipments()
 
     useEffect(() => {
-        getEquipments().then(({data}) => {
-            const equipments = data.data as {name: string, id: number}[]
+        if (isOpen) getEquipments()
+    }, [isOpen, getEquipments])
 
-           const newEquipmentOptions =  equipments.map(({name, id}) => {
-                return {
-                    label: name,
-                    value: id
-                }
-            })
-
-            setEquipmentOptions(newEquipmentOptions)
-        })
-    }, [])
     const handleOk = useCallback(async function() {
         const values = form.getFieldsValue();
 
@@ -50,14 +45,13 @@ export function CreateMeetingRoomModal(props: CreateMeetingRoomModalProps) {
         if(res.status === 201 || res.status === 200) {
             message.success('创建成功');
             form.resetFields();
-            props.handleClose();
+            handleClose();
         } else {
             message.error(res.data.data);
         }
-    }, []);
-    console.log(equipmentOptions)
+    }, [form]);
 
-    return <Modal title="创建会议室" open={props.isOpen} onOk={handleOk} onCancel={() => props.handleClose()} okText={'创建'}>
+    return <Modal title="创建会议室" open={isOpen} onOk={handleOk} onCancel={() => handleClose()} okText={'创建'}>
         <Form
             form={form}
             colon={false}

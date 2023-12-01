@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CreateMeetingRoomDto } from './dto/create-meeting-room.dto';
 import { UpdateMeetingRoomDto } from './dto/update-meeting-room.dto';
-import { FindOptionsWhere, Like, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Like, Repository } from 'typeorm';
 import { MeetingRoom } from './entities/meeting-room.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EquipmentService } from 'src/equipment/equipment.service';
@@ -21,32 +21,60 @@ export class MeetingRoomService {
     const { equipment_ids, ...rest } = createMeetingRoomDto;
     const newMeetingRoom = new MeetingRoom(rest);
     if (equipment_ids) {
-      const equipmentList =
-        await this.equipmentService.findByIds(equipment_ids);
+      const equipmentList = await this.equipmentService.findByIds(
+        equipment_ids,
+        true,
+      );
+      const useEquipmentNames: string[] = [];
       for (const equipment of equipmentList) {
-        if (equipment.is_used) throw new BadRequestException('设备已被使用');
-        equipment.is_used = true;
+        const { name, mettingRoom } = equipment;
+        if (!!mettingRoom) useEquipmentNames.push(name);
       }
+      if (useEquipmentNames.length)
+        throw new BadRequestException(
+          `设备【${useEquipmentNames.join('、')}】已被使用`,
+        );
       newMeetingRoom.equipments = equipmentList;
     }
     const res = await this.meetingRoomRepository.save(newMeetingRoom);
     return res;
   }
 
-  findAll() {
-    return `This action returns all meetingRoom`;
-  }
-
   findOne(id: number) {
-    return `This action returns a #${id} meetingRoom`;
+    return this.meetingRoomRepository.findOne({
+      where: {
+        id,
+      },
+      relations: {
+        equipments: true,
+      },
+    });
   }
 
-  update(id: number, updateMeetingRoomDto: UpdateMeetingRoomDto) {
-    return `This action updates a #${id} meetingRoom`;
+  async update(id: number, updateMeetingRoomDto: UpdateMeetingRoomDto) {
+    const meetingRoom = await this.findOne(id);
+    if (!meetingRoom) throw new BadRequestException('会议室不存在');
+    const { equipment_ids, ...restUpdateMeetingRoomDto } = updateMeetingRoomDto;
+    if (equipment_ids) {
+      const equipmentList = equipment_ids.length
+        ? []
+        : await this.equipmentService.findByIds(equipment_ids, true);
+
+      for (const equipment of equipmentList) {
+        if (!!equipment.mettingRoom)
+          throw new BadRequestException('设备已被使用');
+      }
+      meetingRoom.equipments = equipmentList;
+    }
+
+    await this.meetingRoomRepository.save({
+      ...meetingRoom,
+      ...restUpdateMeetingRoomDto,
+    });
   }
 
   remove(id: number) {
-    return `This action removes a #${id} meetingRoom`;
+    return this.meetingRoomRepository.delete(id);
   }
 
   async findMeetingRooms(
@@ -60,6 +88,11 @@ export class MeetingRoomService {
 
     if (name) where.name = Like(`%${name}%`);
     if (capacity) where.capacity = capacity;
+    if (equipment_ids?.length) {
+      where.equipments = {
+        id: In(equipment_ids),
+      };
+    }
 
     return this.meetingRoomRepository.findAndCount({
       skip: offset,

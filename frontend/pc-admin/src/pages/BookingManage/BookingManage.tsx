@@ -240,7 +240,7 @@ export function BookingManage() {
         <div className="bookingManage-table">
             <Table columns={columns} dataSource={bookingSearchResult} pagination={ {
                 current: offset,
-                limit: limit,
+                pageSize: limit,
                 onChange: changePage
             }}/>
         </div>

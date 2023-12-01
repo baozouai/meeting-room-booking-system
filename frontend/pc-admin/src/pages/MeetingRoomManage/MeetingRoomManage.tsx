@@ -1,4 +1,4 @@
-import { Badge, Button, Form, Image, Input, Modal, Popconfirm, Table, message } from "antd";
+import { Badge, Button, Form, Input, Popconfirm, Select, Table, message } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import './meeting_room_manage.css';
 import { ColumnsType } from "antd/es/table";
@@ -7,11 +7,12 @@ import { deleteMeetingRoom, meetingRoomList } from "../../interfaces/interfaces"
 import { CreateMeetingRoomModal } from "./CreateMeetingRoomModal";
 import { UpdateMeetingRoomModal } from "./UpdateMeetingRoomModal";
 import dayjs from "dayjs";
+import { useGetEquipments } from "@/hooks";
 
 interface SearchMeetingRoom {
     name: string;
     capacity: number;
-    equipment: string;
+    equipment_ids: number[];
 }
 
 export interface MeetingRoomSearchResult {
@@ -19,7 +20,7 @@ export interface MeetingRoomSearchResult {
     name: string;
     capacity: number;
     location: string;
-    equipment: string;
+    equipments: {name: string, id: number}[];
     description: string;
     isBooked: boolean;
     create_time: Date;
@@ -35,6 +36,10 @@ export function MeetingRoomManage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [updateId, setUpdateId] = useState<number>();
+    const [equipmentOptions] = useGetEquipments({
+        include_used: true,
+        requestFirst: true
+    });
 
     const columns: ColumnsType<MeetingRoomSearchResult> = useMemo(() => [
         {
@@ -52,8 +57,8 @@ export function MeetingRoomManage() {
         {
             title: '设备',
             dataIndex: 'equipments',
-            render(value) {
-                return value.map(item => item.name).join(',')
+            render(_, {equipments}) {
+                return equipments.map(item => item.name).join(',')
             }
         },
         {
@@ -117,7 +122,7 @@ export function MeetingRoomManage() {
     }, []);
 
     const searchMeetingRoom = useCallback(async (values: SearchMeetingRoom) => {
-        const res = await meetingRoomList(values.name, values.capacity, values.equipment, offset, limit);
+        const res = await meetingRoomList(values.name, values.capacity, values.equipment_ids, offset - 1, limit);
 
         const { data } = res.data;
         if(res.status === 201 || res.status === 200) {
@@ -138,7 +143,7 @@ export function MeetingRoomManage() {
         searchMeetingRoom({
             name: form.getFieldValue('name'),
             capacity: form.getFieldValue('capacity'),
-            equipment: form.getFieldValue('equipment')
+            equipment_ids: form.getFieldValue('equipment_ids')
         });
     }, [offset, limit, num]);
 
@@ -164,8 +169,10 @@ export function MeetingRoomManage() {
                     <Input />
                 </Form.Item>
 
-                <Form.Item label="设备" name="equipment">
-                    <Input/>
+                <Form.Item label="设备" name="equipment_ids">
+                    <Select mode="multiple" options={equipmentOptions} style={{
+                        width: 100
+                    }}/>
                 </Form.Item>
 
                 <Form.Item label=" ">
@@ -184,7 +191,7 @@ export function MeetingRoomManage() {
         <div className="meetingRoomManage-table">
             <Table columns={columns} dataSource={meetingRoomResult} pagination={ {
                 current: offset,
-                limit: limit,
+                pageSize: limit,
                 onChange: changePage
             }}/>
         </div>
@@ -194,6 +201,7 @@ export function MeetingRoomManage() {
         }}></CreateMeetingRoomModal>
         <UpdateMeetingRoomModal id={updateId!} isOpen={isUpdateModalOpen} handleClose={() => {
             setIsUpdateModalOpen(false);
+        }} onOk={() => {
             setNum(Math.random());
         }}></UpdateMeetingRoomModal>
 

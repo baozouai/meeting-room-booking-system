@@ -154,7 +154,7 @@ export function UserManage() {
         <div className="userManage-table">
             <Table columns={columns} dataSource={userResult} pagination={ {
                 current: offset,
-                limit: limit,
+                pageSize: limit,
                 onChange: changePage
             }}/>
         </div>

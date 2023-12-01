@@ -7,6 +7,9 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  Query,
+  DefaultValuePipe,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { EquipmentService } from './equipment.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
@@ -24,8 +27,11 @@ export class EquipmentController {
   }
 
   @Get()
-  async findAll() {
-    const equipments = await this.equipmentService.findAll(false);
+  async findAll(
+    @Query('include_used', new DefaultValuePipe(false), ParseBoolPipe)
+    include_used: boolean,
+  ) {
+    const equipments = await this.equipmentService.findAll(include_used);
     return equipments.map((equipment) => new EquipmentVo(equipment));
   }
 

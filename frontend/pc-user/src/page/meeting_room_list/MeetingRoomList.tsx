@@ -137,7 +137,7 @@ export function MeetingRoomList() {
         <div className="meetingRoomList-table">
             <Table columns={columns} dataSource={meetingRoomResult} pagination={ {
                 current: offset,
-                limit: limit,
+                pageSize: limit,
                 onChange: changePage
             }}/>
         </div>
