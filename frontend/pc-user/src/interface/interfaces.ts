@@ -123,14 +123,22 @@ export async function updateUserInfoCaptcha() {
     return await axiosInstance.get('/user/update/verify_code');
 }
 
-export async function searchMeetingRoomList(name: string, capacity: number, equipment: string, offset: number, limit: number) {
+export async function searchMeetingRoomList(name: string, capacity: number, equipment_ids: number[], offset: number, limit: number) {
     return await axiosInstance.get('/meeting-room/list', {
         params: {
             name,
             capacity,
-            equipment,
+            equipment_ids,
             offset,
             limit
+        }
+    });
+}
+
+export async function getEquipments(include_used = false) {
+    return await axiosInstance.get('/equipment', {
+        params: {
+            include_used
         }
     });
 }

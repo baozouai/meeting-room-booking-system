@@ -22,7 +22,7 @@ export interface MeetingRoomSearchResult {
     location: string;
     equipments: {name: string, id: number}[];
     description: string;
-    isBooked: boolean;
+    booked: boolean;
     create_time: Date;
     updateTime: Date;
 }
@@ -82,9 +82,9 @@ export function MeetingRoomManage() {
         },
         {
             title: '预定状态',
-            dataIndex: 'isBooked',
+            dataIndex: 'booked',
             render: (_, record) => (
-                record.isBooked ? <Badge status="error">已被预订</Badge> : <Badge status="success">可预定</Badge>
+                record.booked ? <Badge status="error">已被预订</Badge> : <Badge status="success">可预定</Badge>
             )
         },
         {

@@ -1,14 +1,15 @@
-import { Badge, Button, Form, Input, Popconfirm, Table, message } from "antd";
+import { Badge, Button, Form, Input, Select, Table, message } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import './meeting_room_list.css';
 import { ColumnsType } from "antd/es/table";
 import { useForm } from "antd/es/form/Form";
 import { searchMeetingRoomList } from "../../interface/interfaces";
+import { useGetEquipments } from "@/hooks";
 
 interface SearchMeetingRoom {
     name: string;
     capacity: number;
-    equipment: string;
+    equipment_ids: number[];
 }
 
 interface MeetingRoomSearchResult {
@@ -16,9 +17,9 @@ interface MeetingRoomSearchResult {
     name: string;
     capacity: number;
     location: string;
-    equipment: string;
+    equipments: { name: string }[];
     description: string;
-    isBooked: boolean;
+    booked: boolean;
     create_time: Date;
     updateTime: Date;
 }
@@ -28,7 +29,9 @@ export function MeetingRoomList() {
     const [limit, setPageSize] = useState<number>(10);
 
     const [meetingRoomResult, setMeetingRoomResult] = useState<Array<MeetingRoomSearchResult>>([]);
-
+    const [equipmentOptions] = useGetEquipments({
+        include_used: true
+    })
     const columns: ColumnsType<MeetingRoomSearchResult> = useMemo(() => [
         {
             title: '名称',
@@ -44,7 +47,10 @@ export function MeetingRoomList() {
         },
         {
             title: '设备',
-            dataIndex: 'equipment'
+            dataIndex: 'equipments',
+            render(_, { equipments }) {
+                return equipments?.map((item: { name: string }) => item.name).join('、');
+            }
         },
         {
             title: '描述',
@@ -60,9 +66,9 @@ export function MeetingRoomList() {
         },
         {
             title: '预定状态',
-            dataIndex: 'isBooked',
+            dataIndex: 'booked',
             render: (_, record) => (
-                record.isBooked ? <Badge status="error">已被预订</Badge> : <Badge status="success">可预定</Badge>
+                record.booked ? <Badge status="error">已被预订</Badge> : <Badge status="success">可预定</Badge>
             )
         },
         {
@@ -76,7 +82,7 @@ export function MeetingRoomList() {
     ], []);
 
     const searchMeetingRoom = useCallback(async (values: SearchMeetingRoom) => {
-        const res = await searchMeetingRoomList(values.name, values.capacity, values.equipment, offset, limit);
+        const res = await searchMeetingRoomList(values.name, values.capacity, values.equipment_ids, offset - 1, limit);
 
         const { data } = res.data;
         if(res.status === 201 || res.status === 200) {
@@ -97,7 +103,7 @@ export function MeetingRoomList() {
         searchMeetingRoom({
             name: form.getFieldValue('name'),
             capacity: form.getFieldValue('capacity'),
-            equipment: form.getFieldValue('equipment')
+            equipment_ids: form.getFieldValue('equipment')
         });
     }, [offset, limit]);
 
@@ -123,8 +129,8 @@ export function MeetingRoomList() {
                     <Input />
                 </Form.Item>
 
-                <Form.Item label="设备" name="equipment">
-                    <Input/>
+                <Form.Item label="设备" name="equipment_ids">
+                    <Select mode='multiple' options={equipmentOptions}/>
                 </Form.Item>
 
                 <Form.Item label=" ">
