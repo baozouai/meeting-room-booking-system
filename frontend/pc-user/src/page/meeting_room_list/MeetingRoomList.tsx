@@ -5,6 +5,7 @@ import { ColumnsType } from "antd/es/table";
 import { useForm } from "antd/es/form/Form";
 import { searchMeetingRoomList } from "../../interface/interfaces";
 import { useGetEquipments } from "@/hooks";
+import dayjs from 'dayjs'
 
 interface SearchMeetingRoom {
     name: string;
@@ -20,8 +21,8 @@ interface MeetingRoomSearchResult {
     equipments: { name: string }[];
     description: string;
     booked: boolean;
-    create_time: Date;
-    updateTime: Date;
+    create_time: number;
+    update_time: number;
 }
 
 export function MeetingRoomList() {
@@ -30,7 +31,8 @@ export function MeetingRoomList() {
 
     const [meetingRoomResult, setMeetingRoomResult] = useState<Array<MeetingRoomSearchResult>>([]);
     const [equipmentOptions] = useGetEquipments({
-        include_used: true
+        include_used: true,
+        requestFirst: true
     })
     const columns: ColumnsType<MeetingRoomSearchResult> = useMemo(() => [
         {
@@ -58,11 +60,18 @@ export function MeetingRoomList() {
         },
         {
             title: '添加时间',
-            dataIndex: 'create_time'
+            dataIndex: 'create_time',
+            render(_, {create_time}) {
+                return dayjs(create_time).format('YYYY-MM-DD HH:mm:ss')
+
+            }
         },
         {
             title: '上次更新时间',
-            dataIndex: 'updateTime'
+            dataIndex: 'update_time',
+            render(_, {update_time}) {
+                return dayjs(update_time).format('YYYY-MM-DD HH:mm:ss')
+            }
         },
         {
             title: '预定状态',
@@ -86,7 +95,7 @@ export function MeetingRoomList() {
 
         const { data } = res.data;
         if(res.status === 201 || res.status === 200) {
-            setMeetingRoomResult(data.meetingRooms.map((item: MeetingRoomSearchResult) => {
+            setMeetingRoomResult(data.meeting_rooms.map((item: MeetingRoomSearchResult) => {
                 return {
                     key: item.id,
                     ...item
@@ -130,7 +139,7 @@ export function MeetingRoomList() {
                 </Form.Item>
 
                 <Form.Item label="设备" name="equipment_ids">
-                    <Select mode='multiple' options={equipmentOptions}/>
+                    <Select mode='multiple' options={equipmentOptions} style={{width: 140}}/>
                 </Form.Item>
 
                 <Form.Item label=" ">

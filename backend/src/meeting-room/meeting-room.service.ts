@@ -45,9 +45,7 @@ export class MeetingRoomService {
       where: {
         id,
       },
-      relations: {
-        equipments: true,
-      },
+      relations: ['equipments', 'equipments.mettingRoom'],
     });
   }
 

@@ -3,9 +3,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
   ParseIntPipe,
   Query,
   DefaultValuePipe,
@@ -15,8 +13,10 @@ import { EquipmentService } from './equipment.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { EquipmentVo } from './vo/equipment.vo';
+import { RequireLogin } from 'src/common/decorator';
 
 @Controller('equipment')
+@RequireLogin()
 export class EquipmentController {
   constructor(private readonly equipmentService: EquipmentService) {}
 

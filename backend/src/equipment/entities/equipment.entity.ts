@@ -47,7 +47,7 @@ export class Equipment {
   @JoinColumn({
     name: 'meeting_room_id',
   })
-  @ManyToOne(() => MeetingRoom, {
+  @ManyToOne(() => MeetingRoom, (metingRoom) => metingRoom.equipments, {
     onDelete: 'SET NULL',
   })
   mettingRoom: MeetingRoom | null;

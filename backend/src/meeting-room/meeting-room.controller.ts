@@ -11,8 +11,12 @@ import { MeetingRoomService } from './meeting-room.service';
 import { CreateMeetingRoomDto } from './dto/create-meeting-room.dto';
 import { UpdateMeetingRoomDto } from './dto/update-meeting-room.dto';
 import { MeetingRoomVo } from './vo/meeting-room.vo';
+import { RequireLogin } from 'src/common/decorator';
+import { ApiBearerAuth, ApiOkResponse, ApiParam } from '@nestjs/swagger';
 
 @Controller('meeting-room')
+@RequireLogin()
+@ApiBearerAuth()
 export class MeetingRoomController {
   constructor(private readonly meetingRoomService: MeetingRoomService) {}
 
@@ -52,6 +56,14 @@ export class MeetingRoomController {
     await this.meetingRoomService.remove(id);
     return '删除成功';
   }
+  @ApiParam({
+    name: 'id',
+    type: Number,
+  })
+  @ApiOkResponse({
+    description: '查询成功',
+    type: MeetingRoomVo,
+  })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const meetingRoom = await this.meetingRoomService.findOne(id);
