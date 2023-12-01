@@ -31,8 +31,13 @@ axiosInstance.interceptors.response.use(
     },
     async (error) => {
         const { data, config } = error.response;
-
         if(refreshing) {
+            if (config.url.includes('/user/refresh')) {
+                queue.length = 0
+                refreshing = false
+                window.location.href = '/login';
+                return
+            }
             return new Promise((resolve) => {
                 queue.push({
                     config,
@@ -40,7 +45,6 @@ axiosInstance.interceptors.response.use(
                 });
             });
         }
-
         if (data.code === 401 && !config.url.includes('/user/refresh')) {
             
             refreshing = true;
@@ -48,7 +52,6 @@ axiosInstance.interceptors.response.use(
             const res = await refresh_token();
 
             refreshing = false;
-
             if(res.status === 200) {
 
                 queue.forEach(({config, resolve}) => {
@@ -76,8 +79,8 @@ async function refresh_token() {
           refresh_token: localStorage.getItem('refresh_token')
         }
     });
-    localStorage.setItem('access_token', res.data.access_token || '');
-    localStorage.setItem('refresh_token', res.data.refresh_token || '');
+    localStorage.setItem('access_token', res.data.data.access_token || '');
+    localStorage.setItem('refresh_token', res.data.data.refresh_token || '');
     return res;
 }
 

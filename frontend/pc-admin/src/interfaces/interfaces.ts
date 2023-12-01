@@ -144,7 +144,7 @@ export async function bookingList(searchBooking: SearchBooking, offset: number, 
 
     let bookingTimeRangeStart;
     let bookingTimeRangeEnd;
-    
+
     if(searchBooking.rangeStartDate && searchBooking.rangeStartTime) {
         const rangeStartDateStr = dayjs(searchBooking.rangeStartDate).format('YYYY-MM-DD');
         const rangeStartTimeStr = dayjs(searchBooking.rangeStartTime).format('HH:mm');
@@ -157,16 +157,14 @@ export async function bookingList(searchBooking: SearchBooking, offset: number, 
         bookingTimeRangeEnd = dayjs(rangeEndDateStr + ' ' + rangeEndTimeStr).valueOf()
     }
 
-    return await axiosInstance.get('/booking/list', {
-        params: {
-            username: searchBooking.username,
-            meetingRoomName: searchBooking.meetingRoomName,
-            meetingRoomPosition: searchBooking.meetingRoomPosition,
-            bookingTimeRangeStart,
-            bookingTimeRangeEnd,
-            offset,
+    return await axiosInstance.post('/booking/list', {
+            booking_user: searchBooking.username,
+            meeting_room_name: searchBooking.meetingRoomName,
+            meeting_room_location: searchBooking.meetingRoomPosition,
+            start_time: bookingTimeRangeStart,
+            end_time: bookingTimeRangeEnd,
+            offset: offset - 1,
             limit
-        }
     });
 }
 

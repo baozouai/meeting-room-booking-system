@@ -7,7 +7,18 @@ import './booking_manage.css';
 import { UserSearchResult } from "../UserManage/UserManage";
 import { MeetingRoomSearchResult } from "../MeetingRoomManage/MeetingRoomManage";
 import dayjs from "dayjs";
+import { AxiosResponse } from "axios";
 
+export enum BookingStatus {
+    /** 申请中 */
+    APPLYING = 1,
+    /** 审批通过 */
+    APPROVED,
+    /** 审批驳回 */
+    REJECTED,
+    /** 已解除 */
+    RELIEVED,
+  }
 export interface SearchBooking {
     username: string;
     meetingRoomName: string;
@@ -20,14 +31,14 @@ export interface SearchBooking {
 
 interface BookingSearchResult {
     id: number;
-    startTime: string;
-    endTime: string;
-    status: string;
+    start_time: string;
+    end_time: string;
+    status: BookingStatus;
     note: string;
     create_time: string;
-    updateTime: string;
+    update_time: string;
     user: UserSearchResult,
-    room: MeetingRoomSearchResult
+    meeting_room: MeetingRoomSearchResult
 }
 
 export function BookingManage() {
@@ -36,11 +47,11 @@ export function BookingManage() {
     const [bookingSearchResult, setBookingSearchResult] = useState<Array<BookingSearchResult>>([]);
     const [num, setNum] = useState(0);
 
-    async function changeStatus(id: number, status: 'apply' | 'reject' | 'unbind') {
-        const methods = {
-            apply,
-            reject,
-            unbind
+    async function changeStatus(id: number, status: BookingStatus) {
+        const methods: Record<BookingStatus, (id: number)=> Promise<AxiosResponse<any, any>>> = {
+            [BookingStatus.APPROVED]: apply,
+            [BookingStatus.REJECTED]:reject,
+            [BookingStatus.RELIEVED]:unbind
         }
         const res = await methods[status](id);
 
@@ -57,7 +68,7 @@ export function BookingManage() {
             title: '会议室名称',
             dataIndex: 'room',
             render(_, record) {
-                return record.room.name
+                return record.meeting_room.name
             }
         },
         {
@@ -71,41 +82,52 @@ export function BookingManage() {
             title: '开始时间',
             dataIndex: 'startTime',
             render(_, record) {
-                return dayjs(new Date(record.startTime)).format('YYYY-MM-DD HH:mm:ss')
+                return dayjs(new Date(record.start_time)).format('YYYY-MM-DD HH:mm:ss')
             }
         },
         {
             title: '结束时间',
             dataIndex: 'endTime',
             render(_, record) {
-                return dayjs(new Date(record.endTime)).format('YYYY-MM-DD HH:mm:ss')
+                return dayjs(new Date(record.end_time)).format('YYYY-MM-DD HH:mm:ss')
             }
         },
         {
             title: '审批状态',
             dataIndex: 'status',
-            onFilter: (value, record) => record.status.startsWith(value as string),
+            onFilter: (value, record) => {
+                return record.status === value
+            },
             filters: [
                 {
+                    text: '申请中',
+                    value: 1,
+                },
+                {
                   text: '审批通过',
-                  value: '审批通过',
+                  value: 2,
                 },
                 {
                   text: '审批驳回',
-                  value: '审批驳回',
+                  value: 3,
                 },
-                {
-                    text: '申请中',
-                    value: '申请中',
-                },
+               
                 {
                     text: '已解除',
-                    value: '已解除'
+                    value: 4
                 },
               ],
+              render: (_, record) => {
+                return {
+                    1: '申请中',
+                    2: '审批通过',
+                    3: '审批驳回',
+                    4: '已解除',
+                }[record.status]
+              }
         },
         {
-            title: '预定时间',
+            title: '创建时间',
             dataIndex: 'create_time',
             render(_, record) {
                 return dayjs(new Date(record.create_time)).format('YYYY-MM-DD hh:mm:ss')
@@ -113,7 +135,7 @@ export function BookingManage() {
         },
         {
             title: '备注',
-            dataIndex: 'note'
+            dataIndex: 'remark'
         },
         {
             title: '描述',
@@ -126,7 +148,7 @@ export function BookingManage() {
                     <Popconfirm
                         title="通过申请"
                         description="确认通过吗？"
-                        onConfirm={() => changeStatus(record.id, 'apply')}
+                        onConfirm={() => changeStatus(record.id, BookingStatus.APPROVED)}
                         okText="Yes"
                         cancelText="No"
                     >  
@@ -136,7 +158,7 @@ export function BookingManage() {
                     <Popconfirm
                         title="驳回申请"
                         description="确认驳回吗？"
-                        onConfirm={() => changeStatus(record.id, 'reject')}
+                        onConfirm={() => changeStatus(record.id, BookingStatus.REJECTED)}
                         okText="Yes"
                         cancelText="No"
                     >  
@@ -146,7 +168,7 @@ export function BookingManage() {
                     <Popconfirm
                         title="解除申请"
                         description="确认解除吗？"
-                        onConfirm={() => changeStatus(record.id, 'unbind')}
+                        onConfirm={() => changeStatus(record.id, BookingStatus.RELIEVED)}
                         okText="Yes"
                         cancelText="No"
                     >  
@@ -215,7 +237,7 @@ export function BookingManage() {
                 </Form.Item>
 
                 <Form.Item label="预定开始时间" name="rangeStartTime">
-                    <TimePicker/>
+                    <TimePicker  showSecond={false}/>
                 </Form.Item>
 
                 <Form.Item label="预定结束日期" name="rangeEndDate">
@@ -223,7 +245,7 @@ export function BookingManage() {
                 </Form.Item>
 
                 <Form.Item label="预定结束时间" name="rangeEndTime">
-                    <TimePicker/>
+                    <TimePicker showSecond={false}/>
                 </Form.Item>
 
                 <Form.Item label="位置" name="meetingRoomPosition">

@@ -10,5 +10,6 @@ import { EquipmentModule } from 'src/equipment/equipment.module';
 
   controllers: [MeetingRoomController],
   providers: [MeetingRoomService],
+  exports: [MeetingRoomService],
 })
 export class MeetingRoomModule {}

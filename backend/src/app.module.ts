@@ -17,6 +17,8 @@ import { MeetingRoomModule } from './meeting-room/meeting-room.module';
 import { MeetingRoom } from './meeting-room/entities/meeting-room.entity';
 import { Equipment } from './equipment/entities/equipment.entity';
 import { EquipmentModule } from './equipment/equipment.module';
+import { BookingModule } from './booking/booking.module';
+import { Booking } from './booking/entities/booking.entity';
 
 @Module({
   imports: [
@@ -43,7 +45,7 @@ import { EquipmentModule } from './equipment/equipment.module';
           database: 'meeting_room_booking_system',
           synchronize: true,
           logging: true,
-          entities: [User, Role, Permission, MeetingRoom, Equipment],
+          entities: [User, Role, Permission, MeetingRoom, Equipment, Booking],
           connectorPackage: 'mysql2',
           extra: {
             authPlugin: 'sha256_password',
@@ -61,6 +63,7 @@ import { EquipmentModule } from './equipment/equipment.module';
     EmailModule,
     MeetingRoomModule,
     EquipmentModule,
+    BookingModule,
   ],
   controllers: [AppController],
   providers: [

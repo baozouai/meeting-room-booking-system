@@ -83,7 +83,7 @@ export class MeetingRoom {
     message: '会议室描述长度不能超过100',
   })
   @Column({
-    comment: '会议室容量',
+    comment: '会议室描述',
     length: 100,
     default: '',
   })
