@@ -46,6 +46,7 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     async (error) => {
+        debugger
         const { data, config } = error.response;
         if(refreshing) {
             if (config.url.includes('/user/refresh')) {

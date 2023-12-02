@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { RequireLogin } from 'src/common/decorator';
+import { RequireLogin, UserInfo } from 'src/common/decorator';
 import { ListBookingDto } from './dto/List-booking.dto';
 import {
   ApiBearerAuth,
@@ -27,12 +27,12 @@ export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Post()
-  create(@Body() createBookingDto: CreateBookingDto) {
-    const [bookings, totalCount] = this.bookingService.create(createBookingDto);
-    return {
-      bookings,
-      totalCount,
-    };
+  async create(
+    @UserInfo('userId') userId: number,
+    @Body() createBookingDto: CreateBookingDto,
+  ) {
+    await this.bookingService.create(userId, createBookingDto);
+    return '预定成功';
   }
   /** 预订列表 */
   @Post('list')

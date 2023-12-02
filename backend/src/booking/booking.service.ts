@@ -3,7 +3,13 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { ListBookingDto } from './dto/List-booking.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
-import { LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  Between,
+  LessThanOrEqual,
+  Like,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { MeetingRoomService } from 'src/meeting-room/meeting-room.service';
 import { ConfigService } from '@nestjs/config';
@@ -35,8 +41,34 @@ export class BookingService {
   @Inject(EmailService)
   private readonly emailService: EmailService;
 
-  create(createBookingDto: CreateBookingDto) {
-    return 'This action adds a new booking';
+  async create(userId: number, createBookingDto: CreateBookingDto) {
+    const { start_time, end_time, meeting_room_id, remark } = createBookingDto;
+    const startDate = new Date(start_time);
+    const endDate = new Date(end_time);
+
+    const exist = await this.bookingRepository.findOneBy([
+      {
+        start_time: Between(startDate, endDate),
+      },
+      {
+        end_time: Between(startDate, endDate),
+      },
+    ]);
+    if (exist) throw new BadRequestException('该时间段已被预定');
+
+    const user = await this.userService.findOneUserBy({
+      id: userId,
+    });
+    const meetingRoom = await this.meetingRoomService.findOne(meeting_room_id);
+    const booking = new Booking({
+      start_time: startDate,
+      end_time: endDate,
+      remark,
+      meeting_room: meetingRoom,
+      user,
+    });
+
+    await this.bookingRepository.insert(booking);
   }
   findOne(id: number) {
     return this.bookingRepository.findOneBy({ id });

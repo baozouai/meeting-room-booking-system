@@ -52,6 +52,7 @@ export class Booking {
     comment: '预定状态',
     type: 'enum',
     enum: BookingStatus,
+    default: BookingStatus.APPLYING,
   })
   status: BookingStatus;
 
@@ -70,4 +71,15 @@ export class Booking {
     comment: '更新时间',
   })
   update_time: Date;
+
+  constructor(booking?: Partial<Booking>) {
+    if (booking) {
+      const { remark, start_time, end_time, meeting_room, user } = booking;
+      this.remark = remark;
+      this.start_time = start_time;
+      this.end_time = end_time;
+      this.meeting_room = meeting_room;
+      this.user = user;
+    }
+  }
 }

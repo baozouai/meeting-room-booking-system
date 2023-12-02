@@ -3,9 +3,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import './meeting_room_list.css';
 import { ColumnsType } from "antd/es/table";
 import { useForm } from "antd/es/form/Form";
-import { searchMeetingRoomList } from "../../interface/interfaces";
+import { searchMeetingRoomList, createBooking } from "../../interface/interfaces";
 import { useGetEquipments } from "@/hooks";
 import dayjs from 'dayjs'
+import { BookModal, BookingModalValues } from "./book_modal";
 
 interface SearchMeetingRoom {
     name: string;
@@ -28,6 +29,7 @@ interface MeetingRoomSearchResult {
 export function MeetingRoomList() {
     const [offset, setoffset] = useState<number>(1);
     const [limit, setPageSize] = useState<number>(10);
+    const [openModal, setOpenModal] = useState(false)
 
     const [meetingRoomResult, setMeetingRoomResult] = useState<Array<MeetingRoomSearchResult>>([]);
     const [equipmentOptions] = useGetEquipments({
@@ -84,7 +86,7 @@ export function MeetingRoomList() {
             title: '操作',
             render: (_, record) => (
                 <div>
-                    <a href="#">预定</a>
+                    <Button type='link' onClick={() => setOpenModal(true)}>预定</Button>
                 </div>
             )
         }
@@ -120,7 +122,27 @@ export function MeetingRoomList() {
         setoffset(offset);
         setPageSize(limit);
     }, []);
+    const hideBookingModal = () => {
+        setOpenModal(false)
+    }
+    const onBookModalOk = (values: BookingModalValues) => {
+        console.log(values)
+        const { range_time, remark } = values
+        const [start_time, end_time] = range_time
+        createBooking({
+            start_time: start_time.valueOf(),
+            end_time: end_time.valueOf(),
+            remark
+        }).then(({ data }) => {
+            console.log(data)
+            message.success(data.data)
+            debugger
+            setOpenModal(false)
+        })
+        
+    }
 
+    
     return <div id="meetingRoomList-container">
         <div className="meetingRoomList-form">
             <Form
@@ -156,5 +178,6 @@ export function MeetingRoomList() {
                 onChange: changePage
             }}/>
         </div>
+        {openModal && <BookModal open={openModal} onOk={onBookModalOk} onCancel={hideBookingModal}/>}
     </div>
 }
