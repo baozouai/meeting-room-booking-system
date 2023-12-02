@@ -150,6 +150,13 @@ export interface CreateBookingProps {
 export function createBooking(params: CreateBookingProps) {
     return axiosInstance.post('/booking', params)
 }
+export interface BookingHistoryListProps {
+    offset: number,
+    limit: number
+}
+export function BookingHistoryList(props: BookingHistoryListProps) {
+    return axiosInstance.post('/booking/history', props);
+}
 
 export function getEquipments(include_used = false) {
     return axiosInstance.get('/equipment', {

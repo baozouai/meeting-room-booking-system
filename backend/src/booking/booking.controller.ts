@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { BookingStatus } from './entities/booking.entity';
 import { generateParseIntPipe } from 'src/utils';
+import { HistoryBookingDto } from './dto/history-booking.dto';
 
 @Controller('booking')
 @RequireLogin()
@@ -123,9 +124,22 @@ export class BookingController {
     await this.bookingService.urge(id, username);
     return '催办成功';
   }
+  @ApiParam({
+    name: 'user',
+  })
   /** 预定历史 */
-  @Get('history')
-  history() {
-    // return this.bookingService.findAll();
+  @Post('history')
+  async history(
+    @UserInfo('userId') userId: number,
+    @Body() historyBookingDto: HistoryBookingDto,
+  ) {
+    const [bookings, totalCount] = await this.bookingService.history(
+      userId,
+      historyBookingDto,
+    );
+    return {
+      bookings,
+      totalCount,
+    };
   }
 }

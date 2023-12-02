@@ -18,6 +18,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { EmailService } from 'src/email/email.service';
 import { RequireLogin } from 'src/common/decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { HistoryBookingDto } from './dto/history-booking.dto';
 
 @ApiTags('预定')
 @Injectable()
@@ -139,6 +140,22 @@ export class BookingService {
       html: `<a href="http://localhost:3001/booking_manage/${id}">点击审批</a>`,
     });
     this.redisService.set(redisCacheKey, '1', 60 * 30);
+  }
+
+  history(userId: number, historyBookingDto: HistoryBookingDto) {
+    const { offset, limit } = historyBookingDto;
+    return this.bookingRepository.findAndCount({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+      skip: offset,
+      take: limit,
+      relations: {
+        meeting_room: true,
+      },
+    });
   }
 
   async init() {
