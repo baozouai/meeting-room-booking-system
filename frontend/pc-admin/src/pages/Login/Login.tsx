@@ -32,8 +32,6 @@ export function Login() {
             setTimeout(() => {
                 navigate('/');
             }, 1000);
-        } else {
-            message.error(data || '系统繁忙，请稍后再试');
         }
     }, []);
 

@@ -1,5 +1,5 @@
 import { message } from "antd";
-import axios from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { UserInfo } from "../pages/InfoModify/InfoModify";
 import { UpdatePassword } from "../pages/PasswordModify/PasswordModify";
 import { CreateMeetingRoom } from "../pages/MeetingRoomManage/CreateMeetingRoomModal";
@@ -12,6 +12,18 @@ const axiosInstance = axios.create({
     timeout: 3000
 });
 
+async function refreshToken() {
+    const refresh_token = localStorage.getItem('refresh_token')
+    localStorage.removeItem('refresh_token')
+    const res = await axiosInstance.get('/user/refresh', {
+        params: {
+          refresh_token
+        }
+    });
+    localStorage.setItem('access_token', res.data.data.access_token);
+    localStorage.setItem('refresh_token', res.data.data.refresh_token);
+    return res;
+}
 axiosInstance.interceptors.request.use(function (config) {
     const accessToken = localStorage.getItem('access_token');
 
@@ -21,22 +33,54 @@ axiosInstance.interceptors.request.use(function (config) {
     return config;
 })
 
+interface PendingTask {
+    config: AxiosRequestConfig
+    // resolve: (config:AxiosRequestConfig) => Promise<AxiosResponse>
+    resolve: (...args: any) => any
+  }
+let refreshing = false;
+const queue: PendingTask[] = [];
+
 axiosInstance.interceptors.response.use(
     (response) => {
         return response;
     },
     async (error) => {
-        if(!error.response) {
-            return Promise.reject(error);
-        }
         const { data, config } = error.response;
+        if(refreshing) {
+            if (config.url.includes('/user/refresh')) {
+                queue.length = 0
+                refreshing = false
+                window.location.href = '/login';
+                return
+            }
+            return new Promise((resolve) => {
+                queue.push({
+                    config,
+                    resolve
+                });
+            });
+        }
+        if (data.message === 'fail' && typeof data.data === 'string') {
+            if (!(data.code === 401 && localStorage.getItem('refresh_token'))) {
+                message.error(data.data)
+            }
+        }
 
         if (data.code === 401 && !config.url.includes('/user/refresh')) {
             
+            refreshing = true;
+
             const res = await refreshToken();
 
+            refreshing = false;
             if(res.status === 200) {
-                return axios(config);
+
+                queue.forEach(({config, resolve}) => {
+                    resolve(axiosInstance(config))
+                })
+
+                return axiosInstance(config);
             } else {
                 message.error(res.data);
 
@@ -51,25 +95,16 @@ axiosInstance.interceptors.response.use(
     }
 )
 
-async function refreshToken() {
-    const res = await axiosInstance.get('/user/refresh', {
-        params: {
-          refresh_token: localStorage.getItem('refresh_token')
-        }
-    });
-    localStorage.setItem('access_token', res.data.access_token);
-    localStorage.setItem('refresh_token', res.data.refresh_token);
-    return res;
-}
+
 
 export async function login(username: string, password: string) {
-    return await axiosInstance.post('/user/login', {
+    return axiosInstance.post('/user/login', {
         username, password, is_admin: true
     });
 }
 
 export async function userSearch(username: string, nickname: string, email: string, offset: number, limit: number) {
-    return await axiosInstance.get('/user/list', {
+    return axiosInstance.get('/user/list', {
         params: {
             username,
             nickname,
@@ -81,35 +116,35 @@ export async function userSearch(username: string, nickname: string, email: stri
 }
 
 export async function changeFrozenStatus(user_id: number, is_frozen: boolean) {
-    return await axiosInstance.post('/user/change_frozen_status', {
+    return axiosInstance.post('/user/change_frozen_status', {
             user_id,
             is_frozen,
     });
 }
 
 export async function getUserInfo() {
-    return await axiosInstance.get('/user/info');
+    return axiosInstance.get('/user/info');
 }
 
 export async function updateInfo(data: UserInfo) {
-    return await axiosInstance.post('/user/update', data);
+    return axiosInstance.post('/user/update', data);
 }
 
 export async function updateUserInfoCaptcha() {
-    return await axiosInstance.get('/user/update/verify_code');
+    return axiosInstance.get('/user/update/verify_code');
 }
 
 export async function updatePasswordCaptcha() {
-    return await axiosInstance.get('/user/update_password/admin/verify_code', {
+    return axiosInstance.get('/user/update_password/admin/verify_code', {
     });
 }
 
 export async function updatePassword(data: UpdatePassword) {
-    return await axiosInstance.post('/user/update_password', data);
+    return axiosInstance.post('/user/update_password', data);
 }
 
 export async function meetingRoomList(name: string, capacity: number, equipment_ids: number[], offset: number, limit: number) {
-    return await axiosInstance.get('/meeting-room/list', {
+    return axiosInstance.get('/meeting-room/list', {
         params: {
             name,
             capacity,
@@ -121,7 +156,7 @@ export async function meetingRoomList(name: string, capacity: number, equipment_
 }
 
 export async function deleteMeetingRoom(id: number) {
-    return await axiosInstance.get('/meeting-room/delete', {
+    return axiosInstance.get('/meeting-room/delete', {
         params: {
             id
         }
@@ -129,15 +164,15 @@ export async function deleteMeetingRoom(id: number) {
 }
 
 export async function createMeetingRoom(meetingRoom: CreateMeetingRoom) {
-    return await axiosInstance.post('/meeting-room/create', meetingRoom);
+    return axiosInstance.post('/meeting-room/create', meetingRoom);
 }
 
 export async function updateMeetingRoom(meetingRoom: UpdateMeetingRoom) {
-    return await axiosInstance.post('/meeting-room/update', meetingRoom);
+    return axiosInstance.post('/meeting-room/update', meetingRoom);
 }
 
 export async function findMeetingRoom(id: number) {
-    return await axiosInstance.get('/meeting-room/' + id);
+    return axiosInstance.get('/meeting-room/' + id);
 }
 
 export async function bookingList(searchBooking: SearchBooking, offset: number, limit: number) {
@@ -157,7 +192,7 @@ export async function bookingList(searchBooking: SearchBooking, offset: number, 
         bookingTimeRangeEnd = dayjs(rangeEndDateStr + ' ' + rangeEndTimeStr).valueOf()
     }
 
-    return await axiosInstance.post('/booking/list', {
+    return  axiosInstance.post('/booking/list', {
             booking_user: searchBooking.username,
             meeting_room_name: searchBooking.meetingRoomName,
             meeting_room_location: searchBooking.meetingRoomPosition,
@@ -168,20 +203,28 @@ export async function bookingList(searchBooking: SearchBooking, offset: number, 
     });
 }
 
+export async function getBooking(id: number) {
+    return axiosInstance.get('/booking/get', {
+        params: {
+            id
+        }
+    })
+}
+
 export async function apply(id: number) {
-    return await axiosInstance.get('/booking/apply/' + id);
+    return axiosInstance.get('/booking/apply/' + id);
 }
 
 export async function reject(id: number) {
-    return await axiosInstance.get('/booking/reject/' + id);
+    return axiosInstance.get('/booking/reject/' + id);
 }
 
 export async function unbind(id: number) {
-    return await axiosInstance.get('/booking/unbind/' + id);
+    return axiosInstance.get('/booking/unbind/' + id);
 }
 
 export async function meetingRoomUsedCount(startTime: string, endTime: string) {
-    return await axiosInstance.get('/statistic/meetingRoomUsedCount', {
+    return axiosInstance.get('/statistic/meetingRoomUsedCount', {
         params: {
             startTime,
             endTime
@@ -190,7 +233,7 @@ export async function meetingRoomUsedCount(startTime: string, endTime: string) {
 }
 
 export async function userBookingCount(startTime: string, endTime: string) {
-    return await axiosInstance.get('/statistic/userBookingCount', {
+    return axiosInstance.get('/statistic/userBookingCount', {
         params: {
             startTime,
             endTime
@@ -199,7 +242,7 @@ export async function userBookingCount(startTime: string, endTime: string) {
 }
 
 export async function getEquipments(include_used = false) {
-    return await axiosInstance.get('/equipment', {
+    return axiosInstance.get('/equipment', {
         params: {
             include_used
         }

@@ -14,7 +14,10 @@ import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { EquipmentVo } from './vo/equipment.vo';
 import { RequireLogin } from 'src/common/decorator';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('设备')
+@ApiBearerAuth()
 @Controller('equipment')
 @RequireLogin()
 export class EquipmentController {

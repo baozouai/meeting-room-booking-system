@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CreateEmailDto } from './dto/create-email.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
 import { Transporter, createTransport } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
@@ -31,9 +30,6 @@ export class EmailService {
         address: this.configService.get('EMAIL_FROM_ADDRESS'),
       },
     });
-  }
-  create(createEmailDto: CreateEmailDto) {
-    return 'This action adds a new email';
   }
 
   findAll() {

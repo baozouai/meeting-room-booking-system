@@ -3,20 +3,26 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
-  ParseIntPipe,
+  Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
 import { RequireLogin } from 'src/common/decorator';
 import { ListBookingDto } from './dto/List-booking.dto';
-import { ApiParam } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { BookingStatus } from './entities/booking.entity';
+import { generateParseIntPipe } from 'src/utils';
 
 @Controller('booking')
 @RequireLogin()
+@ApiBearerAuth()
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
@@ -38,6 +44,14 @@ export class BookingController {
       totalCount,
     };
   }
+  @Get('get')
+  async getBooking(@Query('id', generateParseIntPipe('id')) id: number) {
+    const booking = await this.bookingService.findOne(id);
+    if (!booking) throw new BadRequestException('没有该预定记录');
+    return {
+      booking,
+    };
+  }
   /** 审批预订申请 */
   @Get('approve')
   approve() {
@@ -52,36 +66,62 @@ export class BookingController {
     name: 'id',
     description: '预订id',
   })
+  @ApiOkResponse({
+    description: '审批通过',
+  })
   /** 通过预订 */
   @Get('apply/:id')
-  async apply(@Param('id', ParseIntPipe) id: number) {
-    await this.bookingService.apply(id);
+  async apply(@Param('id', generateParseIntPipe('id')) id: number) {
+    await this.bookingService.changeStatus(id, BookingStatus.APPROVED);
     return '审批通过';
   }
+
   @ApiParam({
     name: 'id',
     description: '取消预订id',
   })
+  @ApiOkResponse({
+    description: '已驳回',
+  })
   /** 取消预订 */
   @Get('reject/:id')
-  async reject(@Param('id', ParseIntPipe) id: number) {
-    await this.bookingService.reject(id);
+  async reject(@Param('id', generateParseIntPipe('id')) id: number) {
+    await this.bookingService.changeStatus(id, BookingStatus.REJECTED);
     return '已驳回';
   }
   @ApiParam({
     name: 'id',
     description: '解除预订id',
   })
+  @ApiOkResponse({
+    description: '已解除',
+  })
   /** 解除预定 */
   @Get('unbind/:id')
-  async unbind(@Param('id', ParseIntPipe) id: number) {
-    await this.bookingService.unbind(id);
+  async changeStatus(@Param('id', generateParseIntPipe('id')) id: number) {
+    await this.bookingService.changeStatus(id, BookingStatus.RELIEVED);
     return '已解除';
   }
+
+  @ApiParam({
+    name: 'id',
+    description: '催办预订id',
+  })
+  @ApiQuery({
+    name: 'username',
+    description: '催办人',
+  })
+  @ApiOkResponse({
+    description: '催办成功',
+  })
   /** 催办 */
-  @Get('urge')
-  urge() {
-    // return this.bookingService.findAll();
+  @Get('urge/:id')
+  async urge(
+    @Param('id', generateParseIntPipe('id')) id: number,
+    @Query('username') username: string,
+  ) {
+    await this.bookingService.urge(id, username);
+    return '催办成功';
   }
   /** 预定历史 */
   @Get('history')

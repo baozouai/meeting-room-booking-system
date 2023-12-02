@@ -1,22 +1,22 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ListBookingDto } from './dto/List-booking.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
-import {
-  IsNull,
-  LessThanOrEqual,
-  Like,
-  MoreThan,
-  MoreThanOrEqual,
-  Not,
-  Repository,
-} from 'typeorm';
+import { LessThanOrEqual, Like, MoreThanOrEqual, Repository } from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { MeetingRoomService } from 'src/meeting-room/meeting-room.service';
+import { ConfigService } from '@nestjs/config';
+import { isEmail } from 'class-validator';
+import { RedisService } from 'src/redis/redis.service';
+import { EmailService } from 'src/email/email.service';
+import { RequireLogin } from 'src/common/decorator';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('预定')
 @Injectable()
+@RequireLogin()
+@ApiBearerAuth()
 export class BookingService {
   @Inject(UserService)
   private readonly userService: UserService;
@@ -26,8 +26,20 @@ export class BookingService {
   @InjectRepository(Booking)
   private readonly bookingRepository: Repository<Booking>;
 
+  @Inject(ConfigService)
+  private readonly configService: ConfigService;
+
+  @Inject(RedisService)
+  private readonly redisService: RedisService;
+
+  @Inject(EmailService)
+  private readonly emailService: EmailService;
+
   create(createBookingDto: CreateBookingDto) {
     return 'This action adds a new booking';
+  }
+  findOne(id: number) {
+    return this.bookingRepository.findOneBy({ id });
   }
 
   findAll(listBookingDto: ListBookingDto) {
@@ -70,35 +82,33 @@ export class BookingService {
     });
   }
 
-  apply(id: number) {
+  changeStatus(id: number, status: BookingStatus) {
     return this.bookingRepository.update(id, {
-      status: BookingStatus.APPROVED,
+      status,
     });
   }
 
-  reject(id: number) {
-    return this.bookingRepository.update(id, {
-      status: BookingStatus.REJECTED,
+  async urge(id: number, username: string) {
+    const redisCacheKey = `urge_booking_${id}`;
+    const hasCache = await this.redisService.get(redisCacheKey);
+    if (hasCache)
+      throw new BadRequestException('半小时内只能催办一次，请耐心等待');
+
+    let adminEmail = this.configService.get('ADMIN_EMAIL');
+    if (!isEmail(adminEmail)) {
+      const adminUser = await this.userService.findOneUserBy({
+        is_admin: true,
+      });
+      adminEmail = adminUser.email;
+    }
+    await this.emailService.senEmail({
+      to: adminEmail,
+      subject: `用户${username}催单`,
+      html: `<a href="http://localhost:3001/booking_manage?id=${id}">点击审批</a>`,
     });
+    this.redisService.set(redisCacheKey, '1', 60 * 30);
   }
 
-  unbind(id: number) {
-    return this.bookingRepository.update(id, {
-      status: BookingStatus.RELIEVED,
-    });
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} booking`;
-  }
-
-  update(id: number, updateBookingDto: UpdateBookingDto) {
-    return `This action updates a #${id} booking`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} booking`;
-  }
   async init() {
     const booking1 = new Booking();
     booking1.start_time = new Date();

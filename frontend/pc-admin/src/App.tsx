@@ -1,5 +1,5 @@
 import './index.css';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { RouteObject, RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { Index } from './pages/Index/Index';
 import { ErrorPage } from './pages/ErrorPage/ErrorPage';
 import { UserManage } from './pages/UserManage/UserManage';
@@ -13,19 +13,19 @@ import { BookingManage } from './pages/BookingManage/BookingManage';
 import { Statistics } from './pages/Statistics/Statistics';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/es/locale/zh_CN';
+import { BookingManageDetail } from './pages/BookingManage/detail';
 
-const routes = [
+const routes: RouteObject[] = [
   {
     path: "/",
-    element: <Index></Index>,
+    element: <Index />,
     errorElement: <ErrorPage />,
     children: [
       {
-        path: "/",
-        element: <Menu></Menu>,
+        element: <Menu />,
         children: [
           {
-            path: '/',
+            index: true,
             element: <MeetingRoomManage/>
           },
           {
@@ -38,17 +38,24 @@ const routes = [
           },
           {
             path: 'booking_manage',
-            element: <BookingManage/>
+            Component: BookingManage,
+            // children: [
+            //   { path: 'detail',Component: BookingManageDetail, }
+            // ]
           },
           {
             path: 'statistics',
             element: <Statistics/>
-          }
+          },
         ]
       },
       {
+        path: 'booking_manage/:id',
+        Component:BookingManageDetail,
+      },
+      {
         path: "/user",
-        element: <ModifyMenu></ModifyMenu>,
+        element: <ModifyMenu />,
         children: [
           {
             path: 'info_modify',
