@@ -19,6 +19,7 @@ import { Equipment } from './equipment/entities/equipment.entity';
 import { EquipmentModule } from './equipment/equipment.module';
 import { BookingModule } from './booking/booking.module';
 import { Booking } from './booking/entities/booking.entity';
+import { StatisticModule } from './statistic/statistic.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { Booking } from './booking/entities/booking.entity';
     MeetingRoomModule,
     EquipmentModule,
     BookingModule,
+    StatisticModule,
   ],
   controllers: [AppController],
   providers: [

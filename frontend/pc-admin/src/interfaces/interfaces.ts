@@ -224,21 +224,17 @@ export async function unbind(id: number) {
     return axiosInstance.get('/booking/unbind/' + id);
 }
 
-export async function meetingRoomUsedCount(startTime: string, endTime: string) {
-    return axiosInstance.get('/statistic/meetingRoomUsedCount', {
-        params: {
-            startTime,
-            endTime
-        }
+export async function meetingRoomUsedCount(start_date: string, end_date: string) {
+    return axiosInstance.post('/statistic/meeting_room_booking_count', {
+            start_date,
+            end_date
     });
 }
 
-export async function userBookingCount(startTime: string, endTime: string) {
-    return axiosInstance.get('/statistic/userBookingCount', {
-        params: {
-            startTime,
-            endTime
-        }
+export async function userBookingCount(start_date: string, end_date: string) {
+    return axiosInstance.post('/statistic/user_booking_count', {
+            start_date,
+            end_date
     });
 }
 

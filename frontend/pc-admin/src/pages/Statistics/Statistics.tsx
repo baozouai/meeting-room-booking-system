@@ -3,34 +3,45 @@ import "./statistics.css";
 import * as echarts from 'echarts';
 import { useEffect, useRef, useState } from "react";
 import { meetingRoomUsedCount, userBookingCount } from "../../interfaces/interfaces";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { useForm } from "antd/es/form/Form";
 
 interface UserBookingData {
-    userId: string;
+    user_id: string;
     username: string;
-    bookingCount: string;
+    count: string;
 }
 interface MeetingRoomUsedData {
-    meetingRoomName: string;
-    meetingRoomId: number;
-    usedCount: string;
+    meeting_room_name: string;
+    meeting_room_id: number;
+    count: string;
+}
+
+interface FormValues {
+    start_date?: Dayjs
+    end_date?: Dayjs
 }
 
 export function Statistics() {
-
+    const [initValues] = useState(() => ({
+        start_date: dayjs().startOf('month'),
+        // end_date为月底
+        end_date: dayjs().endOf('month')
+    }))
     const [userBookingData, setUserBookingData] = useState<Array<UserBookingData>>();
     const [meetingRoomUsedData, setMeetingRoomUsedData] = useState<Array<MeetingRoomUsedData>>();
-
+    const [chartType, setChartType] = useState<'pie' | 'bar'>('bar');
     const containerRef = useRef<HTMLDivElement>(null);
+    const containerRefChart = useRef<echarts.ECharts>(null);
     const containerRef2 = useRef<HTMLDivElement>(null);
+    const containerRef2Chart = useRef<echarts.ECharts>(null);
+    const [form] = useForm<FormValues>();
 
-    async function getStatisticData(values: { startTime: string; endTime: string; }) {
+    async function getStatisticData(values: FormValues) {
+        const start_date = dayjs(values.start_date).format('YYYY-MM-DD');
+        const end_date = dayjs(values.end_date).format('YYYY-MM-DD');
 
-        const startTime = dayjs(values.startTime).format('YYYY-MM-DD');
-        const endTime = dayjs(values.endTime).format('YYYY-MM-DD');
-
-        const res = await userBookingCount(startTime, endTime);
+        const res = await userBookingCount(start_date, end_date);
         
         const { data } = res.data;
         if(res.status === 201 || res.status === 200) {
@@ -39,7 +50,7 @@ export function Statistics() {
             message.error(data || '系统繁忙，请稍后再试');
         }
 
-        const res2 = await meetingRoomUsedCount(startTime, endTime);
+        const res2 = await meetingRoomUsedCount(start_date, end_date);
         
         const { data: data2 } = res2.data;
         if(res2.status === 201 || res2.status === 200) {
@@ -50,12 +61,18 @@ export function Statistics() {
     }
 
     useEffect(() => {
-        const myChart = echarts.init(containerRef.current);
+        getStatisticData(initValues)
+    }, [initValues])
 
+    useEffect(() => {
+        if (!containerRefChart.current) containerRefChart.current = echarts.init(containerRef.current);
+        const myChart = containerRefChart.current!;
         if(!userBookingData) {
             return;
         }
-    
+        
+
+
         myChart.setOption({
             title: {
                 text: '用户预定情况'
@@ -68,20 +85,21 @@ export function Statistics() {
             series: [
                 {
                     name: '预定次数',
-                    type: form.getFieldValue('chartType'),
+                    type: chartType,
                     data: userBookingData?.map(item => {
                         return {
                             name: item.username,
-                            value: item.bookingCount
+                            value: item.count
                         }
                     })
                 }
             ]
         });
-    }, [userBookingData]);
+    }, [userBookingData, form, chartType]);
 
     useEffect(() => {
-        const myChart = echarts.init(containerRef2.current);
+        if (!containerRef2Chart.current) containerRef2Chart.current = echarts.init(containerRef2.current);
+        const myChart = containerRef2Chart.current!;
 
         if(!meetingRoomUsedData) {
             return;
@@ -93,45 +111,45 @@ export function Statistics() {
             },
             tooltip: {},
             xAxis: {
-                data: meetingRoomUsedData?.map(item => item.meetingRoomName)
+                data: meetingRoomUsedData?.map(item => item.meeting_room_name)
             },
             yAxis: {},
             series: [
                 {
                     name: '使用次数',
-                    type: form.getFieldValue('chartType'),
+                    type: chartType,
                     data: meetingRoomUsedData?.map(item => {
                         return {
-                            name: item.meetingRoomName,
-                            value: item.usedCount
+                            name: item.meeting_room_name,
+                            value: item.count
                         }
                     })
                 }
             ]
         });
-    }, [meetingRoomUsedData]);
+    }, [meetingRoomUsedData, form, chartType]);
 
-    const [form] = useForm();
 
     return <div id="statistics-container">
         <div className="statistics-form">
             <Form
                 form={form}
+                initialValues={initValues}
                 onFinish={getStatisticData}
                 name="search"
                 layout='inline'
                 colon={false}
             >
-                <Form.Item label="开始日期" name="startTime">
+                <Form.Item label="开始日期" name="start_date">
                     <DatePicker />
                 </Form.Item>
 
-                <Form.Item label="结束日期" name="endTime">
+                <Form.Item label="结束日期" name="end_date">
                     <DatePicker />
                 </Form.Item>
 
-                <Form.Item label="图表类型" name="chartType" initialValue={"bar"}>
-                    <Select>
+                <Form.Item label="图表类型" name="chartType" initialValue="bar">
+                    <Select onChange={setChartType}>
                         <Select.Option value="pie">饼图</Select.Option>
                         <Select.Option value="bar">柱形图</Select.Option>
                     </Select>
