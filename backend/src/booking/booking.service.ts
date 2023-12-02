@@ -104,7 +104,7 @@ export class BookingService {
     await this.emailService.senEmail({
       to: adminEmail,
       subject: `用户${username}催单`,
-      html: `<a href="http://localhost:3001/booking_manage?id=${id}">点击审批</a>`,
+      html: `<a href="http://localhost:3001/booking_manage/${id}">点击审批</a>`,
     });
     this.redisService.set(redisCacheKey, '1', 60 * 30);
   }
