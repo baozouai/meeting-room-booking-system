@@ -16,11 +16,13 @@ import {
   ApiOkResponse,
   ApiParam,
   ApiQuery,
+  ApiTags,
 } from '@nestjs/swagger';
 import { BookingStatus } from './entities/booking.entity';
 import { generateParseIntPipe } from 'src/utils';
 import { HistoryBookingDto } from './dto/history-booking.dto';
 
+@ApiTags('预定')
 @Controller('booking')
 @RequireLogin()
 @ApiBearerAuth()

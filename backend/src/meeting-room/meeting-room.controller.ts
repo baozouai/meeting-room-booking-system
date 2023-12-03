@@ -12,8 +12,14 @@ import { CreateMeetingRoomDto } from './dto/create-meeting-room.dto';
 import { UpdateMeetingRoomDto } from './dto/update-meeting-room.dto';
 import { MeetingRoomVo } from './vo/meeting-room.vo';
 import { RequireLogin } from 'src/common/decorator';
-import { ApiBearerAuth, ApiOkResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('会议室')
 @Controller('meeting-room')
 @RequireLogin()
 @ApiBearerAuth()

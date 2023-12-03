@@ -3,10 +3,16 @@ import { UserBookingCountDto } from './dto/user-booking-count.dto';
 import { Controller, Post, Body } from '@nestjs/common';
 import { StatisticService } from './statistic.service';
 import { RequireLogin } from 'src/common/decorator';
-import { ApiBearerAuth, ApiBody, ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { MeetingRoomBookingCountDto } from './dto/meeting-room-booking-count.dto';
 import { UserBookingCountVo } from './vo/user-booking-count.vo';
 
+@ApiTags('统计模块')
 @Controller('statistic')
 @RequireLogin()
 @ApiBearerAuth()
