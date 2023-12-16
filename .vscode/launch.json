@@ -7,7 +7,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program Via NPM",
+      "name": "backend",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
         "run-script",
