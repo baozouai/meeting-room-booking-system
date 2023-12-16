@@ -59,11 +59,14 @@ export class MeetingRoomService {
     const { equipment_ids, ...restUpdateMeetingRoomDto } = updateMeetingRoomDto;
     if (equipment_ids) {
       const equipmentList = equipment_ids.length
-        ? []
-        : await this.equipmentService.findByIds(equipment_ids, true);
+        ? await this.equipmentService.findByIds(equipment_ids)
+        : [];
 
       for (const equipment of equipmentList) {
-        if (!!equipment.mettingRoom)
+        if (
+          !!equipment.mettingRoom &&
+          meetingRoom.id !== equipment.mettingRoom.id
+        )
           throw new BadRequestException('设备已被使用');
       }
       meetingRoom.equipments = equipmentList;
